@@ -31,7 +31,12 @@ class SimulationEngine:
             conn.close()
 
     def process_tick(self, promo_discount: int, inventory: Dict[str, int]) -> Tuple[str, str]:
+        # 🔥 CRASH INSURANCE: Define variables globally at the absolute entrance of the function
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        final_price = 0.0
+        cost_basis = 0.0
+
+        # Inject competitor fluctuations
         self.inject_competitor_volatility(current_time)
 
         # Query active control settings from SQLite on every execution tick
@@ -47,14 +52,16 @@ class SimulationEngine:
             pid = random.choice(list(self.catalog.keys()))
             item_controls = db_controls.get(pid, {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100})
 
-            # Read circuit breakers
+            # Calculate actual pricing metrics at the parent branch level
+            final_price = round(self.catalog[pid]["price"] * (1 - (promo_discount / 100)), 2)
+            cost_basis = self.catalog[pid]["cost"]
+
+            # Circuit breaker evaluation gates
             if not item_controls["sales_enabled"]:
                 return f"⚠️ **BLOCKED SALE:** Customer tried buying {self.catalog[pid]['name']}, but sales are disabled.", "Blocked"
 
             if inventory[pid] > 0:
                 inventory[pid] -= 1
-                final_price = round(self.catalog[pid]["price"] * (1 - (promo_discount / 100)), 2)
-                cost_basis = self.catalog[pid]["cost"]
 
                 sale_data = {
                     "timestamp": current_time, "product_id": pid, "product_name": self.catalog[pid]["name"],
@@ -64,48 +71,60 @@ class SimulationEngine:
                 }
                 self.db.save_sale(sale_data)
 
-                # Dynamic Size Matrix depletion logic patch
+                # Deplete item from dynamic size matrix stock tables
+                purchased_size = random.choice(['S', 'M', 'L', 'XL'])
                 conn = sqlite3.connect(self.db.db_path)
                 cursor = conn.cursor()
-                for size in ['S', 'M', 'L', 'XL']:
-                    cursor.execute("""
-                        UPDATE size_matrix_stock 
-                        SET stock_on_hand = stock_on_hand + 5 
-                        WHERE product_id = ? AND size_variant = ?
-                    """, (pid, size))
+                cursor.execute("""
+                    UPDATE size_matrix_stock 
+                    SET stock_on_hand = MAX(0, stock_on_hand - 1) 
+                    WHERE product_id = ? AND size_variant = ?
+                """, (pid, purchased_size))
                 conn.commit()
                 conn.close()
-                # Recalculate and update the memory dictionary layout
-                inventory[pid] += 20
-            return f"🛍️ Sold {self.catalog[pid]['name']} at ${final_price:.2f} (Profit: ${sale_data['gross_profit']:.2f})", "Sale"
+
+                return f"🛍️ Sold {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f} (Profit: ${sale_data['gross_profit']:.2f})", "Sale"
+            else:
+                return f"❌ **OUT OF STOCK:** Customer tried to buy {self.catalog[pid]['name']}, but item is empty.", "Blocked"
 
         # --- CHANNEL B: PROCUREMENT LOGISTICS RESTOCK ROUTING ---
         elif event_roll > 0.85:
             pid = random.choice(list(self.catalog.keys()))
-
-            # 🔥 FIX 1: Correct default parameters to match open database channels (sales_enabled=True, purchase_enabled=True, max_stock=100)
             item_controls = db_controls.get(pid, {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100})
 
             if not item_controls["purchase_enabled"]:
                 return f"🚚 **BLOCKED RESTOCK:** Procurement delivery for {self.catalog[pid]['name']} rejected (Purchases Disabled).", "Blocked"
 
-            # 🔥 FIX 2: Calculate space available so we don't block shipments right under max bounds
             current_stock = inventory[pid]
             max_allowed = item_controls["max_stock"]
 
             if current_stock >= max_allowed:
                 return f"⚠️ **BLOCKED RESTOCK:** Rejected shipment of {self.catalog[pid]['name']}. Already at capacity limit ({current_stock}/{max_allowed} units).", "Blocked"
 
-            # Cap the restock amount dynamically so it matches your precise warehouse limits
             restock_qty = min(20, max_allowed - current_stock)
-
             inventory[pid] += restock_qty
             total_cost = restock_qty * self.catalog[pid]["cost"]
 
             purchase_data = {
-                "timestamp": current_time, "product_id": pid, "product_name": self.catalog[pid]["name"], "quantity": restock_qty, "total_cost": total_cost
+                "timestamp": current_time, "product_id": pid, "product_name": self.catalog[pid]["name"],
+                "quantity": restock_qty, "total_cost": total_cost
             }
             self.db.save_purchase(purchase_data)
+
+            # Top up dynamic size rows inside SQL matrix
+            conn = sqlite3.connect(self.db.db_path)
+            cursor = conn.cursor()
+            qty_per_size = restock_qty // 4 if restock_qty >= 4 else 1
+            for size in ['S', 'M', 'L', 'XL']:
+                cursor.execute("""
+                    UPDATE size_matrix_stock 
+                    SET stock_on_hand = stock_on_hand + ? 
+                    WHERE product_id = ? AND size_variant = ?
+                """, (qty_per_size, pid, size))
+            conn.commit()
+            conn.close()
+
             return f"🚚 Received {restock_qty}x {self.catalog[pid]['name']} at store warehouse.", "Purchase"
 
-        return "", "Idle"
+        # Fallback output for idle time intervals
+        return "⏱️ Background transaction checks running smoothly...", "Idle"
