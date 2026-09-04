@@ -1,7 +1,15 @@
-# catalog_config.py
+"""
+catalog_config.py
+Centralized product catalog and initial inventory generation logic for the boutique.
+"""
 import random
+import logging
+from logger_config import setup_logging
+
+logger = setup_logging("catalog_config")
 
 # Complete 20-item production catalog map
+# Defines core attributes: name, cost, retail price, theme color, and product category.
 CATALOG = {
     "P001": {"name": "Linen Wrap Dress", "cost": 35.0, "price": 95.0, "color": "#2ecc71", "category": "Dresses"},
     "P002": {"name": "Silk Slip Skirt", "cost": 25.0, "price": 75.0, "color": "#3498db", "category": "Bottoms"},
@@ -28,14 +36,23 @@ CATALOG = {
 
 def generate_initial_inventory():
     """
-    Initializes 20 products: 15 items fully stocked and available (35-60 units),
-    and 5 specific items completely unavailable (0 units).
+    Initializes stock levels for 20 products.
+    15 items are seeded with healthy stock (35-60 units).
+    5 specific items (P016-P020) are seeded as out-of-stock (0 units).
+    
+    Returns:
+        dict: A dictionary mapping product IDs to their initial stock quantities.
     """
-    inventory_state = {}
-    for pid in CATALOG:
-        # Check if the product matches the designated out-of-stock range
-        if int(pid[1:]) >= 16:
-            inventory_state[pid] = 0 # Completely unavailable / Out-of-Stock
-        else:
-            inventory_state[pid] = random.randint(35, 60) # Fully Stocked
-    return inventory_state
+    try:
+        inventory_state = {}
+        for pid in CATALOG:
+            # Check if the product matches the designated out-of-stock range
+            if int(pid[1:]) >= 16:
+                inventory_state[pid] = 0 # Completely unavailable / Out-of-Stock
+            else:
+                inventory_state[pid] = random.randint(35, 60) # Fully Stocked
+        logger.info("Initial inventory state generated successfully.")
+        return inventory_state
+    except Exception as e:
+        logger.error(f"Error generating initial inventory: {e}")
+        return {pid: 0 for pid in CATALOG}

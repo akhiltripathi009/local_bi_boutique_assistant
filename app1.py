@@ -3,8 +3,13 @@ import pandas as pd
 import random
 import json
 import time
+import logging
 from datetime import datetime
 import plotly.express as px
+from logger_config import setup_logging
+
+# Initialize main application logger
+logger = setup_logging("app_premium")
 
 # Import decoupled custom structural logic dependencies
 from database_manager import DatabaseManager
@@ -25,28 +30,46 @@ sim = SimulationEngine(CATALOG, db)
 
 @st.cache_resource
 def init_ollama():
-    return LocalOllamaBoutiqueAnalyst(model_name="llama3.1")
+    """
+    Caches the local AI analyst instance to prevent re-initialization on every rerun.
+    Uses llama3.1 model by default for the premium dashboard.
+    """
+    try:
+        return LocalOllamaBoutiqueAnalyst(model_name="llama3.1")
+    except Exception as e:
+        logger.error(f"Failed to initialize Ollama premium analyst: {e}")
+        return None
 
 
 local_analyst = init_ollama()
 
 # 🔥 DYNAMIC SCHEMA SAFEGUARD: Initialize memory states straight from SQLite tables
 if "live_inventory" not in st.session_state:
-    db_inventory = db.get_current_stock_on_hand()
-    if db_inventory and len(db_inventory) == len(CATALOG):
-        st.session_state.live_inventory = db_inventory
-    else:
+    try:
+        db_inventory = db.get_current_stock_on_hand()
+        if db_inventory and len(db_inventory) == len(CATALOG):
+            st.session_state.live_inventory = db_inventory
+        else:
+            st.session_state.live_inventory = generate_initial_inventory()
+        logger.info("Live inventory state initialized (Premium).")
+    except Exception as e:
+        logger.error(f"Error initializing live inventory (Premium): {e}")
         st.session_state.live_inventory = generate_initial_inventory()
 
 if "store_controls" not in st.session_state:
-    db_settings = db.get_all_circuit_controls()
-    if db_settings and len(db_settings) == len(CATALOG):
-        st.session_state.store_controls = db_settings
-    else:
-        st.session_state.store_controls = {
-            pid: {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100}
-            for pid in CATALOG
-        }
+    try:
+        db_settings = db.get_all_circuit_controls()
+        if db_settings and len(db_settings) == len(CATALOG):
+            st.session_state.store_controls = db_settings
+        else:
+            st.session_state.store_controls = {
+                pid: {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100}
+                for pid in CATALOG
+            }
+        logger.info("Store controls state initialized (Premium).")
+    except Exception as e:
+        logger.error(f"Error initializing store controls (Premium): {e}")
+        st.session_state.store_controls = {}
 
 if "frame_counter" not in st.session_state:
     st.session_state.frame_counter = 0

@@ -1,10 +1,21 @@
-# theme_manager.py
+"""
+theme_manager.py
+Handles the visual styling and luxury branding of the Streamlit application.
+Includes custom CSS injections, KPI layouts, and animated operational arenas.
+"""
 import streamlit as st
+import logging
+from logger_config import setup_logging
 
+logger = setup_logging("theme_manager")
 
 def inject_luxury_branding():
-    """Injects premium styles, layout rules, and micro-animations safely without f-string corruption."""
-    st.markdown("""
+    """
+    Injects premium CSS styles and micro-animations into the Streamlit app.
+    Sets the typography, card layouts, and keyframe animations for sprites.
+    """
+    try:
+        st.markdown("""
         <link href="https://jsdelivr.net" rel="stylesheet">
         <link href="https://googleapis.com" rel="stylesheet">
 
@@ -49,66 +60,90 @@ def inject_luxury_branding():
         }
         </style>
     """, unsafe_allow_html=True)
+    except Exception as e:
+        logger.error(f"Error injecting luxury branding: {e}")
 
 
 def render_luxury_kpi_strip(revenue: float, low_stock: int, status_text: str, is_active: bool):
-    badge_html = '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">● LIVE STREAM</span>' if is_active else '<span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">OFFLINE</span>'
-    st.markdown(f"""
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-4">
-        <div class="premium-card">
-            <p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Database Session Revenue</p>
-            <h3 class="text-3xl font-bold mt-1">${revenue:,.2f}</h3>
-        </div>
-        <div class="premium-card">
-            <p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Critical Safety Breaches</p>
-            <h3 class="text-3xl font-bold mt-1 text-amber-600">{low_stock} Styles</h3>
-        </div>
-        <div class="premium-card">
-            <div class="flex justify-between items-center mb-1">
-                <p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Engine Processing State</p>
-                {badge_html}
+    """
+    Renders a row of three premium KPI cards at the top of the dashboard.
+    
+    Args:
+        revenue (float): Total session revenue.
+        low_stock (int): Count of products with low stock levels.
+        status_text (str): Current status message from the simulation engine.
+        is_active (bool): Whether the real-time simulation is currently running.
+    """
+    try:
+        badge_html = '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-500 text-white animate-pulse">● LIVE STREAM</span>' if is_active else '<span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-bold">OFFLINE</span>'
+        st.markdown(f"""
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-4">
+            <div class="premium-card">
+                <p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Database Session Revenue</p>
+                <h3 class="text-3xl font-bold mt-1">${revenue:,.2f}</h3>
             </div>
-            <p class="text-sm font-medium text-slate-700 mt-2 truncate">{status_text if status_text else "Awaiting operation loop initialize..."}</p>
+            <div class="premium-card">
+                <p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Critical Safety Breaches</p>
+                <h3 class="text-3xl font-bold mt-1 text-amber-600">{low_stock} Styles</h3>
+            </div>
+            <div class="premium-card">
+                <div class="flex justify-between items-center mb-1">
+                    <p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Engine Processing State</p>
+                    {badge_html}
+                </div>
+                <p class="text-sm font-medium text-slate-700 mt-2 truncate">{status_text if status_text else "Awaiting operation loop initialize..."}</p>
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    except Exception as e:
+        logger.error(f"Error rendering luxury KPI strip: {e}")
 
 
 def render_animated_arena(event_type: str, current_stock: int, max_stock: int):
-    """Generates the graphical animation stage container overlaying active sprite channels."""
-    fill_percentage = min(100, int((current_stock / max_stock) * 100)) if max_stock > 0 else 0
-    wave_top_position = 100 - fill_percentage
+    """
+    Renders an animated stage showing customer activity or truck deliveries.
+    
+    Args:
+        event_type (str): Type of event to animate ('Sale', 'Purchase', or 'Idle').
+        current_stock (int): Current total stock level of the highlighted product.
+        max_stock (int): Maximum capacity limit for the product.
+    """
+    try:
+        fill_percentage = min(100, int((current_stock / max_stock) * 100)) if max_stock > 0 else 0
+        wave_top_position = 100 - fill_percentage
 
-    truck_class = "animate-truck" if event_type == "Purchase" else "opacity-0 hidden"
-    shopper_class = "animate-shopper" if event_type == "Sale" else "opacity-0 hidden"
+        truck_class = "animate-truck" if event_type == "Purchase" else "opacity-0 hidden"
+        shopper_class = "animate-shopper" if event_type == "Sale" else "opacity-0 hidden"
 
-    st.markdown(f"""
-    <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden my-4" style="height: 240px; background-color: #0f172a;">
-        <div class="absolute top-4 left-6 z-10">
-            <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Visual Arena Pipeline</span>
+        st.markdown(f"""
+        <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden my-4" style="height: 240px; background-color: #0f172a;">
+            <div class="absolute top-4 left-6 z-10">
+                <span class="text-xs font-mono text-slate-500 uppercase tracking-widest">Visual Arena Pipeline</span>
+            </div>
+
+            <div class="absolute top-1/2 left-12 transform -translate-y-1/2 flex flex-col items-center z-10">
+                <div class="liquid-tank">
+                    <div class="liquid-wave" style="top: {wave_top_position}%;"></div>
+                </div>
+                <span class="text-white font-mono font-bold mt-2 text-sm">{current_stock} / {max_stock} Qty</span>
+            </div>
+
+            <div class="absolute inset-0 w-full h-full flex items-end pb-8 pl-48 pr-12">
+                <div class="absolute bottom-8 left-48 right-12 h-1 bg-slate-700 rounded-full"></div>
+
+                <div class="absolute bottom-9 text-5xl {truck_class}" style="left: 0px;">
+                    🚚 <span class="text-xs bg-blue-600 text-white font-bold p-1 rounded shadow-md absolute -top-6 left-2 font-sans" style="font-size: 10px; white-space: nowrap;">RESTOCK INBOUND</span>
+                </div>
+
+                <div class="absolute bottom-9 text-5xl" style="left: 280px; z-index: 5;">
+                    🏪
+                </div>
+
+                <div class="absolute bottom-9 text-5xl {shopper_class}" style="left: 0px;">
+                    🚶‍♂️ <span class="text-xs bg-emerald-600 text-white font-bold p-1 rounded shadow-md absolute -top-6 left-2 font-sans" style="font-size: 10px; white-space: nowrap;">BUYER</span>
+                </div>
+            </div>
         </div>
-
-        <div class="absolute top-1/2 left-12 transform -translate-y-1/2 flex flex-col items-center z-10">
-            <div class="liquid-tank">
-                <div class="liquid-wave" style="top: {wave_top_position}%;"></div>
-            </div>
-            <span class="text-white font-mono font-bold mt-2 text-sm">{current_stock} / {max_stock} Qty</span>
-        </div>
-
-        <div class="absolute inset-0 w-full h-full flex items-end pb-8 pl-48 pr-12">
-            <div class="absolute bottom-8 left-48 right-12 h-1 bg-slate-700 rounded-full"></div>
-
-            <div class="absolute bottom-9 text-5xl {truck_class}" style="left: 0px;">
-                🚚 <span class="text-xs bg-blue-600 text-white font-bold p-1 rounded shadow-md absolute -top-6 left-2 font-sans" style="font-size: 10px; white-space: nowrap;">RESTOCK INBOUND</span>
-            </div>
-
-            <div class="absolute bottom-9 text-5xl" style="left: 280px; z-index: 5;">
-                🏪
-            </div>
-
-            <div class="absolute bottom-9 text-5xl {shopper_class}" style="left: 0px;">
-                🚶‍♂️ <span class="text-xs bg-emerald-600 text-white font-bold p-1 rounded shadow-md absolute -top-6 left-2 font-sans" style="font-size: 10px; white-space: nowrap;">BUYER</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    except Exception as e:
+        logger.error(f"Error rendering animated arena: {e}")
