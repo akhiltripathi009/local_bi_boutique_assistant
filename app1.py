@@ -18,7 +18,7 @@ from insight_generator_ollama import LocalOllamaBoutiqueAnalyst
 
 # Load the comprehensive 20-product array configuration modules
 from catalog_config import CATALOG, generate_initial_inventory
-from theme_manager import render_luxury_kpi_strip, inject_luxury_branding
+from theme_manager import render_luxury_kpi_strip, inject_luxury_branding, render_animated_arena
 
 from streamlit_lottie import st_lottie
 from animation_assets import get_local_animation_pack
@@ -75,53 +75,7 @@ if "frame_counter" not in st.session_state:
     st.session_state.frame_counter = 0
 
 # 🔥 INLINE BRANDING PASS: Force premium styles into the browser window immediately
-st.markdown("""
-    <link href="https://jsdelivr.net" rel="stylesheet">
-    <link href="https://googleapis.com" rel="stylesheet">
-
-    <style>
-    html, body, [class*="st-text"], .stMarkdown { font-family: 'Inter', sans-serif; color: #1e293b; }
-    h1, h2, h3, .luxury-title { font-family: 'Playfair Display', serif !important; color: #0f172a !important; }
-
-    .premium-card {
-        background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03); position: relative; overflow: hidden;
-    }
-    .metric-card {
-        background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid #2c3e50; margin-bottom: 15px;
-    }
-    .badge-dead { background-color: #fdebd0; color: #b03a2e; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-
-    /* 2D Sprite Animation Keyframes */
-    @keyframes driveIn {
-        0% { transform: translateX(-150px); opacity: 0; }
-        45% { transform: translateX(180px); opacity: 1; }
-        75% { transform: translateX(180px); opacity: 1; }
-        100% { transform: translateX(600px); opacity: 0; }
-    }
-    @keyframes walkAndShop {
-        0% { transform: translateX(500px); opacity: 0; }
-        45% { transform: translateX(250px); opacity: 1; }
-        75% { transform: translateX(250px); opacity: 1; }
-        100% { transform: translateX(-100px); opacity: 0; }
-    }
-    @keyframes fillWave {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    .animate-truck { animation: driveIn 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-    .animate-shopper { animation: walkAndShop 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-
-    .liquid-tank {
-        position: relative; width: 100px; height: 100px; background: #e2e8f0; border-radius: 50%; overflow: hidden; border: 3px solid #1e293b;
-    }
-    .liquid-wave {
-        position: absolute; width: 200%; height: 200%; background: #2c3e50; left: -50%; border-radius: 38%;
-        animation: fillWave 6s infinite linear; transition: top 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    </style>
-""", unsafe_allow_html=True)
+inject_luxury_branding()
 
 # Navigation Menu Router Sidebar
 st.sidebar.title("🎛️ Navigation Control")
@@ -135,7 +89,7 @@ view_selection = st.sidebar.radio(
 # MODULE 1: STRATEGY ANALYTICS DASHBOARD VIEW
 # ==========================================
 if view_selection == "📊 Strategy Analytics Dashboard":
-    st.markdown("<h1 class='luxury-title text-4xl font-bold mb-1'>👗 Executive Strategy Analytics</h1>", unsafe_allow_html=True)
+    st.html("<h1 class='luxury-title text-4xl font-bold mb-1'>👗 Executive Strategy Analytics</h1>")
     st.caption("Deep-dive historical aggregations pulled directly out of your local SQLite database profile caches.")
 
     # Query completely dynamic datasets from DatabaseManager
@@ -150,11 +104,11 @@ if view_selection == "📊 Strategy Analytics Dashboard":
     # Top KPI Metrics row bar built with TailwindCSS HTML
     col_m1, col_m2, col_m3 = st.columns(3)
     with col_m1:
-        st.markdown(f'<div class="premium-card" style="border-left: 5px solid #10b981;"><p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Database Session Revenue</p><h3 class="text-3xl font-bold text-slate-800 mt-1">${total_revenue_db:,.2f}</h3></div>', unsafe_allow_html=True)
+        st.html(f'<div class="premium-card" style="border-left: 5px solid #10b981;"><p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Database Session Revenue</p><h3 class="text-3xl font-bold text-slate-800 mt-1">${total_revenue_db:,.2f}</h3></div>')
     with col_m2:
-        st.markdown(f'<div class="premium-card" style="border-left: 5px solid #3b82f6;"><p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Achieved Real Gross Margin</p><h3 class="text-3xl font-bold text-slate-800 mt-1">{avg_margin_db:.1f}%</h3></div>', unsafe_allow_html=True)
+        st.html(f'<div class="premium-card" style="border-left: 5px solid #3b82f6;"><p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Achieved Real Gross Margin</p><h3 class="text-3xl font-bold text-slate-800 mt-1">{avg_margin_db:.1f}%</h3></div>')
     with col_m3:
-        st.markdown(f'<div class="premium-card" style="border-left: 5px solid #f59e0b;"><p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Size Matrix Anomalies</p><h3 class="text-3xl font-bold text-slate-800 mt-1">{len(broken_curves)} Outages</h3></div>', unsafe_allow_html=True)
+        st.html(f'<div class="premium-card" style="border-left: 5px solid #f59e0b;"><p class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Size Matrix Anomalies</p><h3 class="text-3xl font-bold text-slate-800 mt-1">{len(broken_curves)} Outages</h3></div>')
 
     st.markdown("<br>", unsafe_allow_html=True)
     left_pane, right_pane = st.columns(2)
@@ -186,14 +140,14 @@ if view_selection == "📊 Strategy Analytics Dashboard":
         else:
             for alert in broken_curves[:3]:
                 sizes_str = ", ".join(alert['missing_core_sizes'])
-                st.markdown(f"""
+                st.html(f"""
                 <div class="metric-card">
                     <span class="badge-dead">Size Curve Gap</span>
                     <h4 style="margin: 10px 0 5px 0; color: #2c3e50;">{alert['product_name']}</h4>
                     <p style="font-size:0.92em; margin-bottom:8px; color: #333;"><b>Missing Sizes:</b> <code style="color:#b03a2e; font-weight:bold;">{sizes_str}</code> | <b>Stranded Stock:</b> {alert['stranded_stock_volume']} units</p>
                     <p style="font-size:0.85em; color:#555; background-color:#fff; padding:8px; border-radius:4px; border:1px solid #dee2e6;">💡 <b>Action:</b> {alert['remedy']}</p>
                 </div>
-                """, unsafe_allow_html=True)
+                """)
 
     # Chat Copilot UI Workspace Form
     st.markdown("---")
@@ -214,11 +168,7 @@ if view_selection == "📊 Strategy Analytics Dashboard":
 # MODULE 2: REAL-TIME OPERATIONAL STREAM VIEW
 # ==========================================
 elif view_selection == "⚡ Real-Time Operational Stream":
-    # Load premium global fonts and visual element overrides
-    inject_luxury_branding()
-
-    st.markdown("<h1 class='luxury-title text-4xl font-bold mb-1'>⚡ Real-Time Operations Stream Ingestion</h1>",
-                unsafe_allow_html=True)
+    st.html("<h1 class='luxury-title text-4xl font-bold mb-1'>⚡ Real-Time Operations Stream Ingestion</h1>")
     st.caption(
         "Live streaming engine backed by stable, inline native CSS layout indicators and relational data logging.")
 
@@ -241,7 +191,7 @@ elif view_selection == "⚡ Real-Time Operational Stream":
         st.session_state.frame_counter += 1
 
         # 1. Execute computational changes quietly in background thread directly into SQLite
-        event_text, event_type = sim.process_tick(promo_discount, st.session_state.live_inventory)
+        event_text, event_type, event_pid = sim.process_tick(promo_discount, st.session_state.live_inventory)
 
         # Pre-initialize blank fallbacks for skipped UI drawing frames
         live_sales_view = pd.DataFrame()
@@ -265,48 +215,15 @@ elif view_selection == "⚡ Real-Time Operational Stream":
                 </div>
                 """, unsafe_allow_html=True)
 
-            # B. CRASH-PROOF ANIMATION BANNER (Uses clean styled HTML panels that load instantly offline)
+            # B. CRASH-PROOF ANIMATION BANNER (Uses dynamic sprite animations from Theme Manager)
             with animation_stage_p.container():
-                if event_type == "Purchase":
-                    status_banner_html = """
-                    <div class="w-full flex items-center justify-between p-4 rounded-xl border-l-4 border-blue-500 shadow-sm" style="background-color:#eff6ff; animation: fadeIn 0.3s ease-out;">
-                        <div class="flex items-center space-x-3">
-                            <span style="font-size: 2.25rem; animation: subtle-pulse 1.5s infinite;">🚚</span>
-                            <div>
-                                <h4 class="font-bold text-blue-900 font-sans" style="margin:0; font-size:14px;">B2B REQUISITION INTAKE ACTIVE</h4>
-                                <p class="text-xs text-blue-700" style="margin:2px 0 0 0;">Fulfillment truck arrived. Stocking +20 units evenly split across grid matrices.</p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-mono font-bold px-2 py-1 bg-blue-200 text-blue-800 rounded">STOCK INCREASE</span>
-                    </div>
-                    """
-                elif event_type == "Sale":
-                    status_banner_html = """
-                    <div class="w-full flex items-center justify-between p-4 rounded-xl border-l-4 border-emerald-500 shadow-sm" style="background-color:#ecfdf5; animation: fadeIn 0.3s ease-out;">
-                        <div class="flex items-center space-x-3">
-                            <span style="font-size: 2.25rem; animation: subtle-pulse 1.5s infinite;">🚶‍♂️</span>
-                            <div>
-                                <h4 class="font-bold text-emerald-900 font-sans" style="margin:0; font-size:14px;">CUSTOMER TRANSACTION PROCESSED</h4>
-                                <p class="text-xs text-emerald-700" style="margin:2px 0 0 0;">Shopper checkout complete. Deducting 1 unit from size inventory allocation maps.</p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-mono font-bold px-2 py-1 bg-emerald-200 text-emerald-800 rounded">VAULT REVENUE YIELD</span>
-                    </div>
-                    """
+                if event_pid:
+                    c_qty = st.session_state.live_inventory.get(event_pid, 0)
+                    m_qty = st.session_state.store_controls.get(event_pid, {}).get("max_stock", 100)
+                    render_animated_arena(event_type, c_qty, m_qty)
                 else:
-                    status_banner_html = """
-                    <div class="w-full flex items-center justify-between p-4 rounded-xl border-l-4 border-slate-400 shadow-sm" style="background-color:#f8fafc;">
-                        <div class="flex items-center space-x-3">
-                            <span style="font-size: 2.25rem;">⏱️</span>
-                            <div>
-                                <h4 class="font-bold text-slate-700 font-sans" style="margin:0; font-size:14px;">SYSTEM CORE SCANNING...</h4>
-                                <p class="text-xs text-slate-500" style="margin:2px 0 0 0;">Monitoring point-of-sale logs and vendor lines for real-time traffic events.</p>
-                            </div>
-                        </div>
-                        <span class="text-xs font-mono text-slate-400">IDLE SCURRY</span>
-                    </div>
-                    """
-                st.markdown(status_banner_html, unsafe_allow_html=True)
+                    # Fallback for idle state or errors
+                    render_animated_arena("Idle", 0, 100)
 
             # C. Draw Minimalist Stock Charts with Fixed Y-Axis Layout Bounds
             with chart_p.container():
@@ -346,7 +263,6 @@ elif view_selection == "⚡ Real-Time Operational Stream":
         time.sleep(max(stream_speed, 0.4))
 
     if not start_stream:
-        inject_luxury_branding()
         render_luxury_kpi_strip(db.get_total_historical_revenue(),
                                 sum(1 for v in st.session_state.live_inventory.values() if v <= 15), "Engine Offline",
                                 is_active=False)

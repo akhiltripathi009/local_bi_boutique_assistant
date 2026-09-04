@@ -39,9 +39,8 @@ def init_ollama():
 local_analyst = init_ollama()
 
 # UI Global Stylesheet Configs
-st.markdown(
-    "<style>.metric-card {background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid #2c3e50; margin-bottom: 15px;}</style>",
-    unsafe_allow_html=True)
+st.html(
+    "<style>.metric-card {background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid #2c3e50; margin-bottom: 15px;}</style>")
 
 # app.py (Part 1 - Top Initialization Section)
 
@@ -141,9 +140,8 @@ if view_selection == "📊 Strategy Analytics Dashboard":
         st.subheader("⚠️ Broken Size Curve Alerts")
         for alert in broken_curves:
             sizes_str = ", ".join(alert['missing_core_sizes'])
-            st.markdown(
-                f'<div class="metric-card"><h4 style="color:#2c3e50;">{alert["product_name"]}</h4><p><b>Missing Sizes:</b> <code>{sizes_str}</code></p><p style="font-size:0.85em; background:#fff; padding:5px;">💡 {alert["remedy"]}</p></div>',
-                unsafe_allow_html=True)
+            st.html(
+                f'<div class="metric-card"><h4 style="color:#2c3e50;">{alert["product_name"]}</h4><p><b>Missing Sizes:</b> <code>{sizes_str}</code></p><p style="font-size:0.85em; background:#fff; padding:5px;">💡 {alert["remedy"]}</p></div>')
 
     # Chat Copilot UI Workspace
     st.markdown("---")
@@ -187,7 +185,7 @@ elif view_selection == "⚡ Real-Time Operational Stream":
 
         # 1. Execute simulation updates in background thread directly into the SQLite tables
 
-        event_text, event_type = sim.process_tick(
+        event_text, event_type, event_pid = sim.process_tick(
             promo_discount,
             st.session_state.live_inventory
         )

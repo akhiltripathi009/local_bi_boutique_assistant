@@ -2,7 +2,7 @@ import random
 import sqlite3
 import logging
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from logger_config import setup_logging
 
 logger = setup_logging("simulation_engine")
@@ -53,7 +53,7 @@ class SimulationEngine:
         except Exception as e:
             logger.error(f"Error injecting competitor volatility: {e}")
 
-    def process_tick(self, promo_discount: int, inventory: Dict[str, int]) -> Tuple[str, str]:
+    def process_tick(self, promo_discount: int, inventory: Dict[str, int]) -> Tuple[str, str, Optional[str]]:
         """
         Executes a single simulation cycle, handling sales, restocks, or idle states.
         
@@ -62,7 +62,7 @@ class SimulationEngine:
             inventory (Dict): Mutable dictionary tracking current stock levels.
             
         Returns:
-            Tuple[str, str]: (Event description message, Event type tag).
+            Tuple[str, str, Optional[str]]: (Event description message, Event type tag, Product ID involved).
         """
         try:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -87,7 +87,7 @@ class SimulationEngine:
                 cost_basis = self.catalog[pid]["cost"]
 
                 if not item_controls["sales_enabled"]:
-                    return f"⚠️ **BLOCKED SALE:** Customer tried buying {self.catalog[pid]['name']}, but sales are disabled.", "Blocked"
+                    return f"⚠️ **BLOCKED SALE:** Customer tried buying {self.catalog[pid]['name']}, but sales are disabled.", "Blocked", pid
 
                 if inventory[pid] > 0:
                     inventory[pid] -= 1
@@ -113,9 +113,9 @@ class SimulationEngine:
 
                     msg = f"🛍️ Sold {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f} (Profit: ${sale_data['gross_profit']:.2f})"
                     logger.info(msg)
-                    return msg, "Sale"
+                    return msg, "Sale", pid
                 else:
-                    return f"❌ **OUT OF STOCK:** Customer tried to buy {self.catalog[pid]['name']}, but item is empty.", "Blocked"
+                    return f"❌ **OUT OF STOCK:** Customer tried to buy {self.catalog[pid]['name']}, but item is empty.", "Blocked", pid
 
             # --- CHANNEL B: PROCUREMENT LOGISTICS RESTOCK ROUTING ---
             elif event_roll > 0.85:
@@ -123,13 +123,13 @@ class SimulationEngine:
                 item_controls = db_controls.get(pid, {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100})
 
                 if not item_controls["purchase_enabled"]:
-                    return f"🚚 **BLOCKED RESTOCK:** Procurement delivery for {self.catalog[pid]['name']} rejected (Purchases Disabled).", "Blocked"
+                    return f"🚚 **BLOCKED RESTOCK:** Procurement delivery for {self.catalog[pid]['name']} rejected (Purchases Disabled).", "Blocked", pid
 
                 current_stock = inventory[pid]
                 max_allowed = item_controls["max_stock"]
 
                 if current_stock >= max_allowed:
-                    return f"⚠️ **BLOCKED RESTOCK:** Rejected shipment of {self.catalog[pid]['name']}. Already at capacity limit ({current_stock}/{max_allowed} units).", "Blocked"
+                    return f"⚠️ **BLOCKED RESTOCK:** Rejected shipment of {self.catalog[pid]['name']}. Already at capacity limit ({current_stock}/{max_allowed} units).", "Blocked", pid
 
                 restock_qty = min(20, max_allowed - current_stock)
                 inventory[pid] += restock_qty
@@ -155,9 +155,9 @@ class SimulationEngine:
 
                 msg = f"🚚 Received {restock_qty}x {self.catalog[pid]['name']} at store warehouse."
                 logger.info(msg)
-                return msg, "Purchase"
+                return msg, "Purchase", pid
 
-            return "⏱️ Background transaction checks running smoothly...", "Idle"
+            return "⏱️ Background transaction checks running smoothly...", "Idle", None
         except Exception as e:
             logger.error(f"Error in simulation process_tick: {e}")
-            return f"❌ **ENGINE ERROR:** {str(e)}", "Error"
+            return f"❌ **ENGINE ERROR:** {str(e)}", "Error", None
