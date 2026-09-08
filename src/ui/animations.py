@@ -5,7 +5,7 @@ Manages Lottie animation assets and network fetching logic.
 import streamlit as st
 import requests
 import logging
-from logger_config import setup_logging
+from src.core.logger import setup_logging
 
 logger = setup_logging("animation_assets")
 

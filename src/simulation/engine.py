@@ -1,9 +1,16 @@
 import random
-import sqlite3
-import logging
+import time
 from datetime import datetime
 from typing import Dict, Any, Tuple, Optional
-from logger_config import setup_logging
+try:
+    from src.core.logger import setup_logging
+    from src.core.catalog import CATALOG
+    from src.data.db_manager import DatabaseManager
+except ImportError:
+    from logger_config import setup_logging
+    # CATALOG imported at top-level
+    # DatabaseManager imported at top-level
+
 
 logger = setup_logging("simulation_engine")
 
@@ -23,24 +30,35 @@ class SimulationEngine:
         self.catalog = catalog
         self.db = db_manager
 
+    # Competitor brand pricing tier profiles
+    COMPETITOR_TIERS = {
+        "Velvet & Vine Boutique": (1.15, 1.35),     # Luxury Designer (+15% to +35%)
+        "Avenue Apparel": (0.95, 1.08),             # Contemporary Mid-Tier (-5% to +8%)
+        "Minimalist Thread Co.": (0.70, 0.85)       # Fast Fashion / Budget (-15% to -30%)
+    }
+
     def inject_competitor_volatility(self, current_time: str) -> None:
         """
-        Randomly generates competitor price fluctuations to simulate market dynamics.
+        Randomly generates competitor price fluctuations reflecting realistic brand tiers:
+        - Velvet & Vine Boutique: Luxury Designer (+15% to +35%)
+        - Avenue Apparel: Contemporary Mid-Tier (-5% to +8%)
+        - Minimalist Thread Co.: Fast Fashion / Value (-15% to -30%)
         
         Args:
             current_time (str): Timestamp for the record.
         """
         try:
-            if random.random() < 0.30:
+            if random.random() < 0.35:
                 conn = sqlite3.connect(self.db.db_path)
                 cursor = conn.cursor()
 
                 v_pid = random.choice(list(self.catalog.keys()))
                 v_prod_name = self.catalog[v_pid]["name"]
                 v_my_price = self.catalog[v_pid]["price"]
-                v_competitor = random.choice(["Velvet & Vine Boutique", "Avenue Apparel", "Minimalist Thread Co."])
+                v_competitor = random.choice(list(self.COMPETITOR_TIERS.keys()))
 
-                variance_factor = 1 + (random.choice([-1, 1]) * random.uniform(0.10, 0.25))
+                low_mult, high_mult = self.COMPETITOR_TIERS[v_competitor]
+                variance_factor = random.uniform(low_mult, high_mult)
                 new_competitor_price = round(v_my_price * variance_factor, 2)
 
                 cursor.execute("""
@@ -49,7 +67,7 @@ class SimulationEngine:
                 """, (current_time, v_pid, v_prod_name, v_my_price, v_competitor, new_competitor_price))
                 conn.commit()
                 conn.close()
-                logger.debug(f"Competitor price injected for {v_prod_name}: {new_competitor_price}")
+                logger.debug(f"Tiered competitor price injected for {v_prod_name} [{v_competitor}]: ${new_competitor_price}")
         except Exception as e:
             logger.error(f"Error injecting competitor volatility: {e}")
 
@@ -76,7 +94,8 @@ class SimulationEngine:
             event_roll = random.random()
             is_promo = 1 if promo_discount > 0 else 0
             campaign_name = f"Flash Sale {promo_discount}% Off" if is_promo else "None"
-            sale_threshold = 0.50 if not is_promo else (0.50 + (promo_discount / 100) * 0.50)
+            # Fast transaction cadence: 65% customer sales, 35% restock shipments (continuous animation)
+            sale_threshold = 0.65 if not is_promo else min(0.85, 0.65 + (promo_discount / 100) * 0.30)
 
             # --- CHANNEL A: CUSTOMER TRANSACTION ROUTING ---
             if event_roll <= sale_threshold:
@@ -112,14 +131,28 @@ class SimulationEngine:
                     conn.close()
 
                     msg = f"🛍️ Sold {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f} (Profit: ${sale_data['gross_profit']:.2f})"
-                    logger.info(msg)
+                    logger.info(f"Sale: Sold {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f}")
                     return msg, "Sale", pid
                 else:
                     return f"❌ **OUT OF STOCK:** Customer tried to buy {self.catalog[pid]['name']}, but item is empty.", "Blocked", pid
 
             # --- CHANNEL B: PROCUREMENT LOGISTICS RESTOCK ROUTING ---
-            elif event_roll > 0.85:
-                pid = random.choice(list(self.catalog.keys()))
+            else:
+                # Find items that actually need replenishment and have procurement enabled
+                eligible_pids = [
+                    p for p in self.catalog.keys()
+                    if db_controls.get(p, {}).get("purchase_enabled", True)
+                    and inventory.get(p, 0) < db_controls.get(p, {}).get("max_stock", 150)
+                ]
+
+                if eligible_pids:
+                    # Sort by lowest stock balance to prioritize urgent replenishment
+                    eligible_pids.sort(key=lambda p: inventory.get(p, 0))
+                    # Pick from the most urgent styles needing replenishment
+                    pid = random.choice(eligible_pids[:3])
+                else:
+                    pid = random.choice(list(self.catalog.keys()))
+
                 item_controls = db_controls.get(pid, {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100})
 
                 if not item_controls["purchase_enabled"]:
@@ -154,7 +187,7 @@ class SimulationEngine:
                 conn.close()
 
                 msg = f"🚚 Received {restock_qty}x {self.catalog[pid]['name']} at store warehouse."
-                logger.info(msg)
+                logger.info(f"Purchase: Received {restock_qty}x {self.catalog[pid]['name']}")
                 return msg, "Purchase", pid
 
             return "⏱️ Background transaction checks running smoothly...", "Idle", None

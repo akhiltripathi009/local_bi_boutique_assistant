@@ -4,7 +4,10 @@ Centralized product catalog and initial inventory generation logic for the bouti
 """
 import random
 import logging
-from logger_config import setup_logging
+try:
+    from src.core.logger import setup_logging
+except ImportError:
+    from logger_config import setup_logging
 
 logger = setup_logging("catalog_config")
 

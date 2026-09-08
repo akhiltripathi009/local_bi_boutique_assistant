@@ -1,7 +1,10 @@
 import re
 import logging
 from typing import List, Dict, Any
-from logger_config import setup_logging
+try:
+    from src.core.logger import setup_logging
+except ImportError:
+    from logger_config import setup_logging
 
 logger = setup_logging("sentiment_tracker")
 

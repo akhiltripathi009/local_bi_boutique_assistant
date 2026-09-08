@@ -1,6 +1,15 @@
 import sqlite3
+import random
 import logging
-from logger_config import setup_logging
+try:
+    from src.core.logger import setup_logging
+    from src.core.config import DB_PATH
+    from src.core.catalog import CATALOG
+except ImportError:
+    from logger_config import setup_logging
+    # CATALOG imported at top-level
+    DB_PATH = "boutique_bi.db"
+
 
 logger = setup_logging("init_db")
 
@@ -10,7 +19,7 @@ def initialize_database():
     Includes sales and purchase ledgers for transaction tracking.
     """
     try:
-        conn = sqlite3.connect("boutique_bi.db")
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         # Sales Ledger: Historical record of all customer purchases
@@ -56,7 +65,7 @@ def add_size_matrix_table():
     This manages stock levels at the granular size level (S, M, L, XL).
     """
     try:
-        conn = sqlite3.connect("boutique_bi.db")
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
         # Create an explicit size tracking catalog table matrix
@@ -71,7 +80,7 @@ def add_size_matrix_table():
         """)
 
         # Pre-populate sizes from the catalog configuration
-        from catalog_config import CATALOG
+        # CATALOG imported at top-level
         for pid in CATALOG:
             for size in ['S', 'M', 'L', 'XL']:
                 # Seed standard items with stock, and out-of-stock items with 0

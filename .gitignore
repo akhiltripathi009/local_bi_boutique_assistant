@@ -1,0 +1,33 @@
+﻿# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*.class
+.pytest_cache/
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Database & Runtime Storage
+storage/db/*.db
+storage/db/*.sqlite
+*.db
+*.sqlite
+
+# Exports & Generated Files
+storage/exports/*.pdf
+*.pdf
+
+# Logs
+logs/*.log
+*.log
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+.junie/
+*.swp
+*.swo
+.DS_Store

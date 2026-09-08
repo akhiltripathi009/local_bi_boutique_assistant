@@ -2,7 +2,15 @@ import sqlite3
 import pandas as pd
 import logging
 from typing import Dict, Any, List, Optional
-from logger_config import setup_logging
+try:
+    from src.core.logger import setup_logging
+    from src.core.config import DB_PATH
+    from src.core.catalog import CATALOG
+except ImportError:
+    from logger_config import setup_logging
+    # CATALOG imported at top-level
+    DB_PATH = "boutique_bi.db"
+
 
 logger = setup_logging("database_manager")
 
@@ -12,7 +20,7 @@ class DatabaseManager:
     Handles schema verification, transaction logging (sales/purchases), 
     competitor benchmarking, and stock level tracking.
     """
-    def __init__(self, db_path: str = "boutique_bi.db"):
+    def __init__(self, db_path: str = DB_PATH):
         """
         Initializes the DatabaseManager with a specific database path.
         
@@ -103,7 +111,7 @@ class DatabaseManager:
 
             # Seed initial data if tables were just created
             try:
-                from catalog_config import CATALOG
+                # CATALOG imported at top-level
                 for pid in CATALOG:
                     for size in ['S', 'M', 'L', 'XL']:
                         initial_stock = 0 if int(pid[1:]) >= 16 else 15
@@ -232,40 +240,227 @@ class DatabaseManager:
             logger.error(f"Error calculating average gross margin: {e}")
             return 54.2
 
+    def seed_competitor_benchmarks_if_needed(self, force_refresh: bool = False) -> None:
+        """
+        Populates or re-synchronizes the competitor_benchmarks table with realistic brand tiers:
+        - Velvet & Vine Boutique (Luxury Tier: +15% to +35%)
+        - Avenue Apparel (Contemporary Mid-Tier: -5% to +8%)
+        - Minimalist Thread Co. (Fast Fashion / Budget: -15% to -30%)
+        
+        Guarantees realistic market spread with authentic Underpriced Hazards and Premium opportunities.
+        """
+        try:
+            # CATALOG imported at top-level
+            from datetime import datetime
+            import random
+
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            # Check existing count and distinct competitors
+            cursor.execute("SELECT COUNT(DISTINCT product_id), COUNT(DISTINCT competitor_name) FROM competitor_benchmarks")
+            p_count, c_count = cursor.fetchone()
+
+            if not force_refresh and p_count >= len(CATALOG) and c_count >= 3:
+                conn.close()
+                return
+
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # Strategic market divergence rules for realistic luxury retail benchmarks
+            market_biases = {
+                "P002": {"Velvet & Vine Boutique": 1.38, "Avenue Apparel": 1.15, "Minimalist Thread Co.": 0.95}, # Silk Slip Skirt: strongly underpriced
+                "P008": {"Velvet & Vine Boutique": 1.35, "Avenue Apparel": 1.12, "Minimalist Thread Co.": 0.88}, # Trench Coat: underpriced
+                "P009": {"Velvet & Vine Boutique": 1.30, "Avenue Apparel": 1.14, "Minimalist Thread Co.": 0.90}, # Boho Maxi: underpriced
+                "P003": {"Velvet & Vine Boutique": 1.12, "Avenue Apparel": 0.85, "Minimalist Thread Co.": 0.65}, # Knit Tank: premium positioned
+                "P011": {"Velvet & Vine Boutique": 1.15, "Avenue Apparel": 0.88, "Minimalist Thread Co.": 0.68}, # Cable Vest: premium positioned
+            }
+
+            competitor_defaults = {
+                "Velvet & Vine Boutique": (1.18, 1.32),
+                "Avenue Apparel": (0.96, 1.06),
+                "Minimalist Thread Co.": (0.72, 0.84)
+            }
+
+            for pid, info in CATALOG.items():
+                p_name = info["name"]
+                my_price = info["price"]
+                for comp_name, (min_v, max_v) in competitor_defaults.items():
+                    if pid in market_biases and comp_name in market_biases[pid]:
+                        comp_price = round(my_price * market_biases[pid][comp_name], 2)
+                    else:
+                        comp_price = round(my_price * random.uniform(min_v, max_v), 2)
+
+                    cursor.execute("""
+                        INSERT INTO competitor_benchmarks (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    """, (now_str, pid, p_name, my_price, comp_name, comp_price))
+
+            conn.commit()
+            conn.close()
+            logger.info("Competitor benchmarks seeded successfully with realistic brand tiers!")
+        except Exception as e:
+            logger.error(f"Error seeding competitor benchmarks: {e}")
+
     def fetch_dynamic_competitor_pricing(self) -> pd.DataFrame:
         """
-        Aggregates market pricing benchmarks to determine internal price positioning.
+        Aggregates the latest market pricing benchmarks per competitor and product.
+        Computes store-wide and style-level Price Indices, position flags, recommended prices,
+        and potential margin gaps.
         
         Returns:
-            pd.DataFrame: Dataframe with product_name, your_price, avg_market_price, 
-                          pricing_index, and market position categorization.
+            pd.DataFrame: High-density dataframe with product attributes, competitor prices,
+                          market average, price index, position, and recommended pricing.
         """
         try:
             self._verify_schema()
+            self.seed_competitor_benchmarks_if_needed()
+            # CATALOG imported at top-level
+
             conn = sqlite3.connect(self.db_path)
+            # Fetch latest price record for each (product_id, competitor_name)
             query = """
-                SELECT product_name, your_price, AVG(competitor_price) as avg_market_price
-                FROM competitor_benchmarks GROUP BY product_id
+                SELECT c.product_id, c.product_name, c.your_price, c.competitor_name, c.competitor_price, c.timestamp
+                FROM competitor_benchmarks c
+                INNER JOIN (
+                    SELECT product_id, competitor_name, MAX(id) as max_id
+                    FROM competitor_benchmarks
+                    GROUP BY product_id, competitor_name
+                ) latest ON c.id = latest.max_id
             """
-            df = pd.read_sql_query(query, conn)
+            raw_df = pd.read_sql_query(query, conn)
             conn.close()
 
-            if df.empty:
-                logger.info("Competitor pricing table is empty; returning fallback benchmark data.")
-                return pd.DataFrame([
-                    {"product_name": "Linen Wrap Dress", "pricing_index": 108.0, "position": "Market Aligned"},
-                    {"product_name": "Silk Slip Skirt", "pricing_index": 88.2, "position": "Underpriced Hazard"},
-                    {"product_name": "Ribbed Knit Tank", "pricing_index": 116.6, "position": "Premium Positioned"},
-                    {"product_name": "Oversized Denim Jacket", "pricing_index": 104.3, "position": "Market Aligned"}
-                ])
+            if raw_df.empty:
+                logger.warning("No competitor benchmarks found after seeding attempt.")
+                return pd.DataFrame()
 
-            df["pricing_index"] = round((df["your_price"] / df["avg_market_price"]) * 100, 1)
-            df["position"] = df["pricing_index"].apply(
-                lambda x: "Premium Positioned" if x > 112 else ("Underpriced Hazard" if x < 92 else "Market Aligned"))
+            # Pivot to wide format: 1 entry per product
+            products = {}
+            for _, row in raw_df.iterrows():
+                pid = str(row["product_id"])
+                pname = row["product_name"]
+                y_price = float(row["your_price"])
+                cname = row["competitor_name"]
+                cprice = float(row["competitor_price"])
+
+                if pid not in products:
+                    cat_info = CATALOG.get(pid, {})
+                    cost = cat_info.get("cost", round(y_price * 0.45, 2))
+                    category = cat_info.get("category", "Apparel")
+                    # Prioritize active catalog price if present
+                    active_price = cat_info.get("price", y_price)
+                    products[pid] = {
+                        "product_id": pid,
+                        "product_name": pname,
+                        "category": category,
+                        "cost": cost,
+                        "your_price": active_price,
+                        "velvet_vine_price": None,
+                        "avenue_price": None,
+                        "minimalist_price": None,
+                        "competitor_prices": []
+                    }
+
+                if "Velvet" in cname:
+                    products[pid]["velvet_vine_price"] = cprice
+                elif "Avenue" in cname:
+                    products[pid]["avenue_price"] = cprice
+                elif "Minimalist" in cname:
+                    products[pid]["minimalist_price"] = cprice
+                products[pid]["competitor_prices"].append(cprice)
+
+            # Build enriched dataframe rows
+            rows = []
+            for pid, d in products.items():
+                c_prices = d["competitor_prices"]
+                avg_market = round(sum(c_prices) / len(c_prices), 2) if c_prices else d["your_price"]
+                min_market = round(min(c_prices), 2) if c_prices else d["your_price"]
+                max_market = round(max(c_prices), 2) if c_prices else d["your_price"]
+                price_idx = round((d["your_price"] / avg_market) * 100, 1) if avg_market > 0 else 100.0
+
+                # Determine Market Position
+                if price_idx < 92.0:
+                    pos = "Underpriced Hazard"
+                    rec_price = round(avg_market * 0.97, 2)
+                    strat_action = f"Raise to ${rec_price:.2f} (Capture +${rec_price - d['your_price']:.2f} margin)"
+                elif price_idx > 112.0:
+                    pos = "Premium Positioned"
+                    rec_price = round(avg_market * 1.05, 2)
+                    strat_action = "Premium Positioned (Monitor sell-through & fabric value)"
+                else:
+                    pos = "Market Aligned"
+                    rec_price = d["your_price"]
+                    strat_action = "Market Aligned (Competitive parity)"
+
+                margin_pct = round(((d["your_price"] - d["cost"]) / d["your_price"]) * 100, 1) if d["your_price"] > 0 else 0.0
+                potential_gain = round(max(0.0, rec_price - d["your_price"]), 2)
+
+                rows.append({
+                    "product_id": pid,
+                    "product_name": d["product_name"],
+                    "category": d["category"],
+                    "cost": d["cost"],
+                    "your_price": d["your_price"],
+                    "margin_pct": margin_pct,
+                    "velvet_vine_price": d["velvet_vine_price"] or round(d["your_price"] * 1.25, 2),
+                    "avenue_price": d["avenue_price"] or round(d["your_price"] * 1.02, 2),
+                    "minimalist_price": d["minimalist_price"] or round(d["your_price"] * 0.78, 2),
+                    "avg_market_price": avg_market,
+                    "min_market_price": min_market,
+                    "max_market_price": max_market,
+                    "pricing_index": price_idx,
+                    "position": pos,
+                    "recommended_price": rec_price,
+                    "margin_gap": potential_gain,
+                    "strategic_action": strat_action
+                })
+
+            df = pd.DataFrame(rows)
+            # Sort by pricing_index ascending so underpriced hazards appear first
+            df = df.sort_values(by="pricing_index", ascending=True).reset_index(drop=True)
             return df
         except Exception as e:
             logger.error(f"Error fetching competitor pricing: {e}")
             return pd.DataFrame()
+
+    def update_catalog_price(self, product_id: str, new_price: float) -> bool:
+        """
+        Updates the active retail price for a product in CATALOG and persists the change
+        into competitor_benchmarks for the latest snapshot.
+        
+        Args:
+            product_id: Product ID string (e.g. 'P002')
+            new_price: New retail price
+            
+        Returns:
+            bool: True if updated successfully
+        """
+        try:
+            # CATALOG imported at top-level
+            from datetime import datetime
+
+            new_price = round(float(new_price), 2)
+            if product_id in CATALOG:
+                CATALOG[product_id]["price"] = new_price
+
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            cursor.execute("""
+                UPDATE competitor_benchmarks 
+                SET your_price = ? 
+                WHERE product_id = ?
+            """, (new_price, product_id))
+
+            conn.commit()
+            conn.close()
+            logger.info(f"Updated retail price for {product_id} to ${new_price:.2f}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating catalog price: {e}")
+            return False
 
     def calculate_dynamic_broken_curves(self) -> list:
         """
@@ -291,7 +486,7 @@ class DatabaseManager:
                 product_sizes[pid][size] = stock
 
             dynamic_alerts = []
-            from catalog_config import CATALOG
+            # CATALOG imported at top-level
 
             for pid, sizes in product_sizes.items():
                 if pid not in CATALOG:
@@ -383,7 +578,7 @@ class DatabaseManager:
             stock_df = pd.read_sql_query(stock_query, conn)
             conn.close()
 
-            from catalog_config import CATALOG
+            # CATALOG imported at top-level
 
             rows = []
             for pid, details in CATALOG.items():

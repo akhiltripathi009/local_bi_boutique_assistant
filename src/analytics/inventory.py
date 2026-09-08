@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 import logging
 from typing import Dict, List, Any
-from logger_config import setup_logging
+try:
+    from src.core.logger import setup_logging
+except ImportError:
+    from logger_config import setup_logging
 
 logger = setup_logging("inventory_insights")
 
