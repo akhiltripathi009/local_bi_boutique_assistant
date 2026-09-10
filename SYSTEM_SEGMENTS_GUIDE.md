@@ -280,7 +280,7 @@ graph TD
 - **3 Specialized Advisory Personas:**
   1. *👔 Senior Merchandise Director:* Boardroom-level retail math, sell-through rate (STR %), inventory turnover, GMROI, and cash-flow protection.
   2. *🏷️ Pricing & Margin Strategist:* Competitive price positioning, margin defense, CPI optimization, and price elasticity.
-  3. *✨ Haute Fashion & Styling Curator:* Luxury craftsmanship, customer feedback review polarity, fabric quality, and assortment harmony.
+  3. *✨ Mishika Fashion & Styling Curator:* Luxury craftsmanship, customer feedback review polarity, fabric quality, and assortment harmony.
 - **Live Store Knowledge Inspector:**
   - Visual cards showing the exact real-time payload retrieved from SQLite and injected into the LLM system prompt.
   - Verifies transparency: owners can see the exact numbers the AI is referencing.

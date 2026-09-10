@@ -49,13 +49,30 @@ def generate_initial_inventory():
     try:
         inventory_state = {}
         for pid in CATALOG:
-            # Check if the product matches the designated out-of-stock range
-            if int(pid[1:]) >= 16:
-                inventory_state[pid] = 0 # Completely unavailable / Out-of-Stock
+            if pid.startswith("P") and pid[1:].isdigit() and int(pid[1:]) >= 16:
+                inventory_state[pid] = 0
             else:
-                inventory_state[pid] = random.randint(35, 60) # Fully Stocked
+                inventory_state[pid] = random.randint(35, 60)
         logger.info("Initial inventory state generated successfully.")
         return inventory_state
     except Exception as e:
         logger.error(f"Error generating initial inventory: {e}")
         return {pid: 0 for pid in CATALOG}
+
+
+def register_product(pid: str, name: str, cost: float, price: float, color: str = "#2c3e50", category: str = "Apparel") -> dict:
+    """
+    Registers a new product into the active CATALOG mapping in-memory.
+    """
+    product_entry = {
+        "name": name,
+        "cost": float(cost),
+        "price": float(price),
+        "color": color,
+        "category": category
+    }
+    CATALOG[pid] = product_entry
+    logger.info(f"Registered dynamic product {pid}: {name}")
+    return product_entry
+
+

@@ -578,7 +578,7 @@ def render_animated_arena(
         ctx.font = 'bold 8px -apple-system, BlinkMacSystemFont, sans-serif';
         ctx.fillStyle = '#fde68a';
         ctx.textAlign = 'center';
-        ctx.fillText('HAUTE BOUTIQUE', boutiqueX + bW / 2, bY + 6);
+        ctx.fillText('MISHIKA BOUTIQUE', boutiqueX + bW / 2, bY + 6);
 
         // 5. TRUCK DYNAMICS (Restock Logistics - Smooth & Steady Screen Pacing)
         if (truck.state === 'inbound') {{

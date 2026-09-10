@@ -1,5 +1,6 @@
 import random
 import time
+import sqlite3
 from datetime import datetime
 from typing import Dict, Any, Tuple, Optional
 try:
@@ -29,6 +30,7 @@ class SimulationEngine:
         """
         self.catalog = catalog
         self.db = db_manager
+        self._cached_customers = []
 
     # Competitor brand pricing tier profiles
     COMPETITOR_TIERS = {
@@ -36,6 +38,14 @@ class SimulationEngine:
         "Avenue Apparel": (0.95, 1.08),             # Contemporary Mid-Tier (-5% to +8%)
         "Minimalist Thread Co.": (0.70, 0.85)       # Fast Fashion / Budget (-15% to -30%)
     }
+
+    def _get_customer_pool(self):
+        """Retrieves and caches the 20 VIP boutique customers for transaction attribution."""
+        if not self._cached_customers:
+            cust_df = self.db.get_all_customers()
+            if not cust_df.empty:
+                self._cached_customers = cust_df.to_dict('records')
+        return self._cached_customers
 
     def inject_competitor_volatility(self, current_time: str) -> None:
         """
@@ -74,6 +84,7 @@ class SimulationEngine:
     def process_tick(self, promo_discount: int, inventory: Dict[str, int]) -> Tuple[str, str, Optional[str]]:
         """
         Executes a single simulation cycle, handling sales, restocks, or idle states.
+        All new customer transactions are attributed to the 20 seeded customers.
         
         Args:
             promo_discount (int): Active promotional discount percentage.
@@ -91,35 +102,76 @@ class SimulationEngine:
             # Query active control settings from SQLite on every execution tick
             db_controls = self.db.get_all_circuit_controls()
 
+            # Check if active campaign exists if manual promo slider is 0
+            active_camp = self.db.get_active_campaign()
+            effective_discount = promo_discount
+            campaign_name = "None"
+            if effective_discount <= 0 and active_camp:
+                effective_discount = int(active_camp.get("discount_pct", 0))
+                campaign_name = active_camp.get("name", "Active Campaign")
+
+            is_promo = 1 if effective_discount > 0 else 0
+            if is_promo and campaign_name == "None":
+                campaign_name = f"Flash Sale {effective_discount}% Off"
+
             event_roll = random.random()
-            is_promo = 1 if promo_discount > 0 else 0
-            campaign_name = f"Flash Sale {promo_discount}% Off" if is_promo else "None"
-            # Fast transaction cadence: 65% customer sales, 35% restock shipments (continuous animation)
-            sale_threshold = 0.65 if not is_promo else min(0.85, 0.65 + (promo_discount / 100) * 0.30)
+            sale_threshold = 0.65 if not is_promo else min(0.85, 0.65 + (effective_discount / 100) * 0.30)
 
             # --- CHANNEL A: CUSTOMER TRANSACTION ROUTING ---
             if event_roll <= sale_threshold:
                 pid = random.choice(list(self.catalog.keys()))
                 item_controls = db_controls.get(pid, {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100})
 
-                final_price = round(self.catalog[pid]["price"] * (1 - (promo_discount / 100)), 2)
+                final_price = round(self.catalog[pid]["price"] * (1 - (effective_discount / 100)), 2)
                 cost_basis = self.catalog[pid]["cost"]
 
                 if not item_controls["sales_enabled"]:
                     return f"⚠️ **BLOCKED SALE:** Customer tried buying {self.catalog[pid]['name']}, but sales are disabled.", "Blocked", pid
 
-                if inventory[pid] > 0:
+                if inventory.get(pid, 0) > 0:
                     inventory[pid] -= 1
 
+                    # Select one of the 20 dummy customers
+                    customer_pool = self._get_customer_pool()
+                    if customer_pool:
+                        customer = random.choice(customer_pool)
+                        cust_id = int(customer["id"])
+                        cust_name = customer["name"]
+                        cust_email = customer["email"]
+                        cust_phone = customer["phone"]
+                        preferred_size = customer.get("preferred_size", "M")
+                        purchased_size = preferred_size if preferred_size in ['S', 'M', 'L', 'XL'] else random.choice(['S', 'M', 'L', 'XL'])
+                        tier_badge = customer.get("loyalty_tier", "VIP")
+                    else:
+                        cust_id = None
+                        cust_name = "VIP Client"
+                        cust_email = "client@boutique.com"
+                        cust_phone = "+1-555-0100"
+                        purchased_size = random.choice(['S', 'M', 'L', 'XL'])
+                        tier_badge = "VIP"
+
                     sale_data = {
-                        "timestamp": current_time, "product_id": pid, "product_name": self.catalog[pid]["name"],
-                        "quantity": 1, "unit_price": final_price, "unit_cost": cost_basis, "total_revenue": final_price,
-                        "total_cost": cost_basis, "gross_profit": round(final_price - cost_basis, 2),
-                        "is_promotional": is_promo, "campaign_name": campaign_name
+                        "timestamp": current_time,
+                        "product_id": pid,
+                        "product_name": self.catalog[pid]["name"],
+                        "quantity": 1,
+                        "unit_price": final_price,
+                        "unit_cost": cost_basis,
+                        "total_revenue": final_price,
+                        "total_cost": cost_basis,
+                        "gross_profit": round(final_price - cost_basis, 2),
+                        "is_promotional": is_promo,
+                        "campaign_name": campaign_name,
+                        "customer_id": cust_id,
+                        "customer_name": cust_name,
+                        "customer_email": cust_email,
+                        "customer_phone": cust_phone,
+                        "size_purchased": purchased_size,
+                        "channel": "In-Store Boutique"
                     }
                     self.db.save_sale(sale_data)
 
-                    purchased_size = random.choice(['S', 'M', 'L', 'XL'])
+                    # Deduct stock ONLY from Shop Floor stock matrix (Warehouse Stock is isolated)
                     conn = sqlite3.connect(self.db.db_path)
                     cursor = conn.cursor()
                     cursor.execute("""
@@ -130,11 +182,12 @@ class SimulationEngine:
                     conn.commit()
                     conn.close()
 
-                    msg = f"🛍️ Sold {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f} (Profit: ${sale_data['gross_profit']:.2f})"
-                    logger.info(f"Sale: Sold {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f}")
+                    msg = f"🛍️ **{cust_name}** ({tier_badge}) purchased {self.catalog[pid]['name']} (Size {purchased_size}) for **${final_price:.2f}**"
+                    logger.info(f"Sale: {cust_name} purchased {self.catalog[pid]['name']} (Size {purchased_size}) at ${final_price:.2f}")
                     return msg, "Sale", pid
                 else:
                     return f"❌ **OUT OF STOCK:** Customer tried to buy {self.catalog[pid]['name']}, but item is empty.", "Blocked", pid
+
 
             # --- CHANNEL B: PROCUREMENT LOGISTICS RESTOCK ROUTING ---
             else:

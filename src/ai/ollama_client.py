@@ -2,6 +2,11 @@ import json
 import logging
 import urllib.request
 from typing import Dict, Any, List, Generator, Optional
+
+try:
+    import ollama
+except ImportError:
+    ollama = None
 try:
     from src.core.logger import setup_logging
     from src.core.catalog import CATALOG
@@ -43,8 +48,8 @@ PERSONAS = {
             "Always cite exact prices, competitor gaps, and projected margin impacts."
         )
     },
-    "✨ Haute Fashion & Styling Curator": {
-        "title": "Haute Fashion & Styling Curator",
+    "✨ Mishika Fashion & Styling Curator": {
+        "title": "Mishika Fashion & Styling Curator",
         "badge": "Client Experience & Product Quality",
         "description": "Luxury brand curator evaluating customer review sentiment, fabric quality, and size curve harmony.",
         "prompt": (

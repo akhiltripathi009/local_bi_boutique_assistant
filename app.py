@@ -32,9 +32,16 @@ from src.ui.animations import get_local_animation_pack
 from src.reporting.pdf_builder import generate_enterprise_pdf, fetch_report_datasets, generate_chat_transcript_pdf
 from src.analytics.competitor import CompetitorAnalyzer
 
+# Import Shivi Deep Agent and modular views
+from src.deep_agent.orchestrator import ShiviDeepAgent
+from src.ui.portal_view import render_boutique_portal_view
+from src.ui.customer_crm_view import render_customer_crm_view
+from src.ui.deep_agent_view import render_shivi_deep_agent_view
+
 # Core Engine Global Persistence Instances Setup
 db = DatabaseManager()
 sim = SimulationEngine(CATALOG, db)
+shivi_agent = ShiviDeepAgent(db)
 
 
 def init_ollama():
@@ -121,12 +128,16 @@ view_selection = st.sidebar.radio(
     [
         "📊 Executive Dashboard",
         "⚡ Live Store Operations",
+        "📦 Boutique Operations Portal",
+        "👥 VIP Customer Directory & CRM",
+        "🧠 Shivi - Enterprise Deep Agent",
         "⚙️ Inventory & Controls",
         "📄 Executive PDF Reports",
         "🤖 AI Copilot Studio"
     ],
     key="main_nav_radio"
 )
+
 
 
 # ==========================================
@@ -803,8 +814,9 @@ elif view_selection == "⚡ Live Store Operations":
             marker_line_color='#0f172a',
             marker_line_width=1
         )
+        max_inv_val = max(list(st.session_state.live_inventory.values()) + [250])
         fig_standby.update_layout(
-            yaxis=dict(range=[0, 250], title="Units On Hand", fixedrange=True),
+            yaxis=dict(range=[0, max_inv_val + 25], title="Units On Hand", fixedrange=True),
             xaxis=dict(title="", tickangle=-30, fixedrange=True),
             template="simple_white",
             height=200,
@@ -818,9 +830,31 @@ elif view_selection == "⚡ Live Store Operations":
 
 
 # ==========================================
+# MODULE: BOUTIQUE OPERATIONS PORTAL
+# ==========================================
+elif view_selection == "📦 Boutique Operations Portal":
+    render_boutique_portal_view(db)
+
+
+# ==========================================
+# MODULE: VIP CUSTOMER CRM DIRECTORY
+# ==========================================
+elif view_selection == "👥 VIP Customer Directory & CRM":
+    render_customer_crm_view(db)
+
+
+# ==========================================
+# MODULE: SHIVI ENTERPRISE DEEP AGENT
+# ==========================================
+elif view_selection == "🧠 Shivi - Enterprise Deep Agent":
+    render_shivi_deep_agent_view(db, shivi_agent)
+
+
+# ==========================================
 # MODULE 3: INVENTORY & CIRCUIT CONTROLS VIEW
 # ==========================================
 elif view_selection == "⚙️ Inventory & Controls":
+
     # --- STEP 3.1: Inventory & Circuit Controls Header & Manager Guide ---
     st.markdown("<h1 class='luxury-title text-3xl font-bold mb-1'>⚙️ Inventory & Circuit Controls</h1>", unsafe_allow_html=True)
     st.caption("Manage operational safeguards, toggle sales, and configure maximum stock boundaries per product.")
@@ -879,11 +913,12 @@ elif view_selection == "⚙️ Inventory & Controls":
                             st.rerun()
 
                     with col_max:
+                        cur_max = int(current_settings.get("max_stock", 100))
                         max_cap = st.number_input(
                             "Max Cap",
                             min_value=10,
-                            max_value=300,
-                            value=current_settings["max_stock"],
+                            max_value=max(2000, cur_max + 200),
+                            value=cur_max,
                             step=10,
                             key=f"m_in_{pid}"
                         )
@@ -980,7 +1015,7 @@ elif view_selection == "📄 Executive PDF Reports":
 
     with col_down_right:
         pdf_bytes = generate_enterprise_pdf(db, scope_key)
-        filename = f"HauteBoutique_{scope_key.capitalize()}_Audit_{datetime.now().strftime('%Y%m%d')}.pdf"
+        filename = f"MishikaBoutique_{scope_key.capitalize()}_Audit_{datetime.now().strftime('%Y%m%d')}.pdf"
         st.download_button(
             label=f"📥 Download Enterprise PDF Report",
             data=pdf_bytes,
@@ -1294,7 +1329,7 @@ elif view_selection == "🤖 AI Copilot Studio":
             st.markdown(f"**Latest Generated Report:** `{audit_res['scope_label']}`")
             st.caption(f"Synthesized by **{audit_res['model']}** on {audit_res['timestamp']}. Fully verified against SQLite transaction ledgers.")
         with down_col_right:
-            dl_filename = f"HauteBoutique_AI_Audit_{audit_res['scope_code']}_{datetime.now().strftime('%Y%m%d')}.pdf"
+            dl_filename = f"MishikaBoutique_AI_Audit_{audit_res['scope_code']}_{datetime.now().strftime('%Y%m%d')}.pdf"
             st.download_button(
                 label="📥 Download Enterprise PDF",
                 data=audit_res["pdf_bytes"],

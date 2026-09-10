@@ -354,7 +354,7 @@ add_header(s8, "Module 5: Local AI Copilot Studio & Strategic Knowledge RAG")
 
 features_m5 = [
     ("🦙 100% Offline Local LLM", "• Powered by local Ollama instances running llama3.2:3b or mistral:latest.\n• Zero API Keys & Zero Per-Token Costs: Completely offline, fast, and free to query.\n• Complete Privacy: Internal financial transactions and review sentiments never leave the machine."),
-    ("👔 3 Executive Advisory Personas", "• Senior Merchandise Director: Focuses on sell-through rate (STR %), inventory turnover, GMROI, and working capital defense.\n• Pricing & Margin Strategist: Analyzes Competitor Price Index (CPI), eliminates underpriced hazards, and optimizes elasticity.\n• Haute Fashion & Styling Curator: Assesses garment craftsmanship, customer feedback, and size curve harmony."),
+    ("👔 3 Executive Advisory Personas", "• Senior Merchandise Director: Focuses on sell-through rate (STR %), inventory turnover, GMROI, and working capital defense.\n• Pricing & Margin Strategist: Analyzes Competitor Price Index (CPI), eliminates underpriced hazards, and optimizes elasticity.\n• Mishika Fashion & Styling Curator: Assesses garment craftsmanship, customer feedback, and size curve harmony."),
     ("🔍 Live Knowledge Inspector & FAQs", "• Real-Time Context Cards: Shows the exact database payload injected into Ollama prompts (revenue, top sellers, broken curves, competitor hazards).\n• Tabbed Strategic FAQs: Pre-loaded questions across 4 strategic pillars (Financials, Inventory, Pricing, Sentiment).\n• 1-Click PDF Chat Export: Compiles formatted transcripts into executive PDF documents.")
 ]
 
