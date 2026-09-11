@@ -211,14 +211,14 @@ class SimulationEngine:
                 if not item_controls["purchase_enabled"]:
                     return f"🚚 **BLOCKED RESTOCK:** Procurement delivery for {self.catalog[pid]['name']} rejected (Purchases Disabled).", "Blocked", pid
 
-                current_stock = inventory[pid]
+                current_stock = inventory.get(pid, 0)
                 max_allowed = item_controls["max_stock"]
 
                 if current_stock >= max_allowed:
                     return f"⚠️ **BLOCKED RESTOCK:** Rejected shipment of {self.catalog[pid]['name']}. Already at capacity limit ({current_stock}/{max_allowed} units).", "Blocked", pid
 
                 restock_qty = min(20, max_allowed - current_stock)
-                inventory[pid] += restock_qty
+                inventory[pid] = current_stock + restock_qty
                 total_cost = restock_qty * self.catalog[pid]["cost"]
 
                 purchase_data = {

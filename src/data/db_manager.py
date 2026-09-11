@@ -1040,6 +1040,17 @@ class DatabaseManager:
             logger.error(f"Error fetching warehouse stock: {e}")
             return {}
 
+    def get_size_matrix_stock(self) -> pd.DataFrame:
+        """Fetches active shop floor size matrix breakdown."""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            df = pd.read_sql_query("SELECT product_id, size_variant, stock_on_hand FROM size_matrix_stock ORDER BY product_id, size_variant", conn)
+            conn.close()
+            return df
+        except Exception as e:
+            logger.error(f"Error fetching size matrix stock: {e}")
+            return pd.DataFrame()
+
     def get_warehouse_matrix_stock(self) -> pd.DataFrame:
         """Fetches detailed warehouse stock breakdown by size variant."""
         try:

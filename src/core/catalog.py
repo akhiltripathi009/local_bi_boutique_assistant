@@ -76,3 +76,6 @@ def register_product(pid: str, name: str, cost: float, price: float, color: str 
     return product_entry
 
 
+CATEGORIES = ["Dresses", "Bottoms", "Tops", "Outerwear", "Knitwear"]
+
+

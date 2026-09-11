@@ -84,11 +84,19 @@ class BoutiqueTestCase(unittest.TestCase):
     def test_18_live_fashion_news_and_default_fallback(self):
         test_live_fashion_news_and_default_fallback(self.db)
 
+from tests.test_live_operations import LiveOperationsTestCase
+from tests.test_agent_routes import ShiviAgentRoutesTestCase
+
 if __name__ == '__main__':
     print("=" * 65)
     print("  Local BI Boutique Assistant - Automated Test Suite")
     print("=" * 65)
-    suite = unittest.TestLoader().loadTestsFromTestCase(BoutiqueTestCase)
+    loader = unittest.TestLoader()
+    suite = unittest.TestSuite([
+        loader.loadTestsFromTestCase(BoutiqueTestCase),
+        loader.loadTestsFromTestCase(LiveOperationsTestCase),
+        loader.loadTestsFromTestCase(ShiviAgentRoutesTestCase)
+    ])
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     if result.wasSuccessful():

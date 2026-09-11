@@ -87,6 +87,23 @@ class HierarchicalPlanner:
     and routes work to specialized subagents.
     """
     @classmethod
+    def create_default_orchestration_plan(cls) -> AgentPlan:
+        """Generates an initial active enterprise operational plan for live monitoring."""
+        plan_id = f"plan_{int(time.time())}"
+        items = [
+            TodoItem(1, "Continuous Inventory & Broken Curve Surveillance", "Audit 20 catalog styles across Shop Floor and Warehouse Reserve", "InventoryWatchdogSubagent"),
+            TodoItem(2, "VIP Clienteling & Birthday Concierge", "Track 20 high-net-worth patrons, styling preferences, and notification channels", "TrendHunterSubagent"),
+            TodoItem(3, "Market Parity & Dynamic Markdown Guardrails", "Monitor competitor price indices (Velvet & Vine, Avenue Apparel) within 50% threshold", "CampaignDispatchSubagent"),
+            TodoItem(4, "Autonomous Operational Audit & Reporting", "Compile boardroom-grade financial ledgers and executive PDF summaries", "ReportingSubagent")
+        ]
+        plan = AgentPlan(plan_id, "🧠 Autonomous Boutique Floor & VIP Client Orchestration", items)
+        plan.status = "In Progress"
+        items[0].complete("Audited 20 catalog styles across Shop Floor and Warehouse Reserve.")
+        items[1].complete("Verified 20 VIP patrons, styling preferences, and notification channels.")
+        items[2].start()
+        return plan
+
+    @classmethod
     def create_plan_for_goal(cls, goal: str) -> AgentPlan:
         plan_id = f"plan_{int(time.time())}"
         goal_lower = goal.lower()

@@ -4,8 +4,17 @@
     <mappings />
     <preferences />
   </component>
+  <component name="DBNavigator.Project.DataEditorManager">
+    <record-view-column-sorting-type value="BY_INDEX" />
+    <value-preview-text-wrapping value="true" />
+    <value-preview-pinned value="false" />
+  </component>
   <component name="DBNavigator.Project.DatabaseAssistantManager">
     <assistants>
+      <assistant-state connection-id="a4d93495-f40f-4348-bd68-b01b4ca5cfbf" assistant-type="SELECT_AI" default-profile-name="" selected-chat-id="" availability="UNAVAILABLE" acknowledgement="NONE">
+        <tools />
+        <mcp-servers />
+      </assistant-state>
       <assistant-state connection-id="a4d93495-f40f-4348-bd68-b01b4ca5cfbf" assistant-type="PUBLIC" default-profile-name="" selected-chat-id="" availability="AVAILABLE" acknowledgement="NONE" selected="true">
         <tools />
         <mcp-servers />
@@ -23,18 +32,44 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="a4d93495-f40f-4348-bd68-b01b4ca5cfbf">
-      <console name="Connection" type="STANDARD" schema="" session="Main" />
+      <console name="Connection" type="STANDARD" schema="main" session="Main"><![CDATA[select *from customers]]></console>
     </connection>
     <connection id="43289724-ae06-4a30-8fb8-f185cbb0c6ec">
       <console name="Connection 1" type="STANDARD" schema="main" session="Main" />
     </connection>
   </component>
+  <component name="DBNavigator.Project.DatabaseEditorStateManager">
+    <last-used-providers />
+  </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
     <open-files />
+  </component>
+  <component name="DBNavigator.Project.DatabasePrerequisiteManager">
+    <prerequisites />
+  </component>
+  <component name="DBNavigator.Project.DatabaseSessionManager">
+    <connection id="a4d93495-f40f-4348-bd68-b01b4ca5cfbf" />
+    <connection id="43289724-ae06-4a30-8fb8-f185cbb0c6ec" />
+  </component>
+  <component name="DBNavigator.Project.ExecutionManager">
+    <retain-sticky-names value="false" />
+  </component>
+  <component name="DBNavigator.Project.MethodExecutionManager">
+    <method-browser />
+    <execution-history>
+      <group-entries value="true" />
+      <execution-inputs />
+    </execution-history>
+    <execution-variables-cache />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />
     <filters />
+  </component>
+  <component name="DBNavigator.Project.ScriptExecutionManager" clear-outputs="true">
+    <recently-used-interfaces>
+      <mapping database-type="SQLITE" interface-id="DEFAULT" />
+    </recently-used-interfaces>
   </component>
   <component name="DBNavigator.Project.Settings">
     <states>
@@ -49,7 +84,7 @@
           <description value="" />
           <database-type value="SQLITE" />
           <config-type value="BASIC" />
-          <database-version value="9999.0" />
+          <database-version value="3.53" />
           <driver-source value="BUNDLED" />
           <driver-library value="" />
           <driver value="" />
@@ -63,7 +98,7 @@
           <protocol value="" />
           <url-parameters />
           <files>
-            <file path="boutique_bi.db" schema="main" />
+            <file path="C:\Users\akhil\Downloads\local_bi_boutique_assistant\storage\db\boutique_bi.db" schema="main" />
           </files>
           <type value="NONE" />
           <user value="" />
@@ -738,5 +773,9 @@
         </visibility-settings>
       </environment>
     </general-settings>
+  </component>
+  <component name="DBNavigator.Project.StatementExecutionManager">
+    <execution-variables />
+    <execution-variable-types />
   </component>
 </project>

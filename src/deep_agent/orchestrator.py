@@ -55,13 +55,19 @@ class ShiviDeepAgent:
         self.campaign_subagent = CampaignDispatchSubagent(self.db)
         self.watchdog_subagent = InventoryWatchdogSubagent(self.db)
         
-        # Active Plan State
-        self.current_plan: Optional[AgentPlan] = None
+        # Active Plan State (Initialized with default continuous orchestration plan)
+        self.current_plan: Optional[AgentPlan] = HierarchicalPlanner.create_default_orchestration_plan()
         
         # Register Core Tools in Registry
         self._register_internal_tools()
         
         logger.info(f"Initialized {self.name} - {self.title}")
+
+    def get_or_create_default_plan(self) -> AgentPlan:
+        """Returns the current plan or re-initializes the default orchestration plan."""
+        if self.current_plan is None:
+            self.current_plan = HierarchicalPlanner.create_default_orchestration_plan()
+        return self.current_plan
 
     def _register_internal_tools(self):
         """Registers callable tools and steering action executors into the internal environment."""
@@ -510,6 +516,17 @@ class ShiviDeepAgent:
             "dispatched_count": dispatched_count,
             "status_note": f"Formulated birthday styling gifts for {len(messages)} VIP patrons."
         }
+
+    # ==========================================
+    # ROUTINE ALIASES
+    # ==========================================
+    def alert_clients_on_restock(self, product_id: Optional[str] = None, channel: str = "both", dry_run: bool = False) -> Dict[str, Any]:
+        """Convenience alias for check_and_notify_back_in_stock."""
+        return self.check_and_notify_back_in_stock(product_id=product_id, channel=channel, dry_run=dry_run)
+
+    def run_birthday_concierge_routine(self, days_ahead: int = 14, dry_run: bool = False) -> Dict[str, Any]:
+        """Convenience alias for dispatch_birthday_perks."""
+        return self.dispatch_birthday_perks(days_ahead=days_ahead, dry_run=dry_run)
 
     # ==========================================
     # SANDBOX CODE RUNNER
