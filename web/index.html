@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mishika Fashion — Luxury Boutique BI & Shivi Deep Agent Studio</title>
+  <meta name="description" content="Commercial executive BI, warehouse inventory management, VIP customer CRM, and autonomous multi-agent retail orchestration for Mishika Fashion Luxury Boutique.">
+
+  <!-- Google Fonts: Playfair Display, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+  <!-- Luxury Atelier Design System -->
+  <link rel="stylesheet" href="/css/style.css?v=2.0.3">
+</head>
+<body>
+
+  <!-- ==========================================
+       APP HEADER & STORE MARQUEE
+       ========================================== -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-logo-icon">⚜️</div>
+      <div>
+        <h1 class="brand-title">Mishika Fashion</h1>
+        <div class="brand-subtitle">Haute Couture Atelier • Business Intelligence & AI Suite</div>
+      </div>
+    </div>
+
+    <div class="header-status-group">
+      <div class="status-badge" id="header-status-badge">
+        <span class="pulse-dot" id="header-status-dot"></span>
+        <span id="header-status-text">Connecting Store...</span>
+      </div>
+
+      <!-- Quick Executive Reports Dropdown / Links -->
+      <div style="display:flex; gap:8px;">
+        <a href="/api/reports/opening-pdf" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:6px 12px;" title="Download Morning Opening PDF Report">
+          📄 Morning PDF
+        </a>
+        <a href="/api/reports/closing-pdf" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:6px 12px;" title="Download Evening Closing PDF Report">
+          📑 Evening PDF
+        </a>
+        <a href="/api/reports/presentation-pptx" target="_blank" class="btn btn-secondary" style="font-size:12px; padding:6px 12px;" title="Download Executive PPTX Pitch Deck">
+          📊 Board PPTX
+        </a>
+      </div>
+
+      <!-- Theme Toggle Button -->
+      <button class="btn-theme-toggle" id="btn-toggle-theme" title="Toggle Light / Dark Luxury Theme" onclick="App.toggleTheme()">
+        <span id="theme-toggle-icon">☀️</span> <span id="theme-toggle-text">Light Mode</span>
+      </button>
+
+      <!-- Slide-out AI Copilot Drawer Trigger -->
+      <button class="btn-copilot-trigger" id="btn-open-copilot">
+        <span>✨</span> Shivi AI Copilot
+      </button>
+    </div>
+  </header>
+
+  <!-- ==========================================
+       MAIN CONTAINER & NAVIGATION TABS
+       ========================================== -->
+  <main class="app-container">
+
+    <!-- Store Live Marquee Banner -->
+    <div style="margin-bottom:18px; padding:8px 16px; background:rgba(212,175,55,0.06); border:1px solid rgba(212,175,55,0.2); border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--gold-light);">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span>🏬 <b>Store Status:</b> Open & Active</span>
+        <span>•</span>
+        <span>📍 <b>Flagship Location:</b> Atelier Milan & New York</span>
+        <span>•</span>
+        <span>⏱️ <b>Audit Rhythm:</b> Morning 09:00 | Evening 21:00</span>
+      </div>
+      <div id="dashboard-alert-banner" style="display:none; color:var(--rose); font-weight:700;">
+        ⚠️ <span id="alert-count-label">0 Alerts</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs Bar -->
+    <nav class="nav-tabs-bar" role="tablist">
+      <button class="nav-tab-btn active" data-tab="tab-dashboard">
+        📊 Executive Dashboard
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-live-ops">
+        ⚡ Live Shop Operations
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-inventory">
+        📦 Inventory & Warehouse
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-crm">
+        👑 VIP Client CRM
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-campaigns">
+        🏷️ Pricing & Campaigns
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-agent">
+        🤖 Shivi Deep Agent
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-sandbox">
+        ⚡ Data Science Sandbox
+      </button>
+    </nav>
+
+    <!-- ==========================================
+         TAB 1: EXECUTIVE DASHBOARD
+         ========================================== -->
+    <section id="tab-dashboard" class="tab-content active">
+      <!-- KPI Cards Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Gross Net Revenue <span>💰</span></div>
+          <div class="kpi-value" id="kpi-revenue">$0.00</div>
+          <div class="kpi-subtext" style="color:var(--emerald);">▲ Real-time POS velocity</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Atelier Gross Profit <span>💎</span></div>
+          <div class="kpi-value" id="kpi-profit">$0.00</div>
+          <div class="kpi-subtext" style="color:var(--emerald);">Post-COGS earnings</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Realized Margin <span>📈</span></div>
+          <div class="kpi-value" id="kpi-margin">0.0%</div>
+          <div class="kpi-subtext">Target threshold: 60%+</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Sell-Through Rate <span>🎯</span></div>
+          <div class="kpi-value" id="kpi-str">0.0%</div>
+          <div class="kpi-subtext">Velocity / Beginning inventory</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Shop Floor Stock <span>👗</span></div>
+          <div class="kpi-value" id="kpi-shop-stock">0 pcs</div>
+          <div class="kpi-subtext">Active retail floor pieces</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Warehouse Reserve <span>🏭</span></div>
+          <div class="kpi-value" id="kpi-wh-stock">0 pcs</div>
+          <div class="kpi-subtext">Safety stock in back-depot</div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="charts-grid">
+        <div class="glass-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Hourly Sales Velocity ($)</h3>
+            <span style="font-size:12px; color:var(--text-muted);">Intraday Real-Time Progression</span>
+          </div>
+          <div id="chart-hourly-sales" style="min-height: 280px;"></div>
+        </div>
+
+        <div class="glass-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Category Revenue Contribution</h3>
+            <span style="font-size:12px; color:var(--text-muted);">By Collection</span>
+          </div>
+          <div id="chart-category-performance" style="min-height: 280px;"></div>
+        </div>
+      </div>
+
+      <!-- Top Performing Styles -->
+      <div class="glass-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <div>
+            <h3 class="chart-title">Best-Selling Couture Pieces</h3>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Top styles ranked by net generated revenue</div>
+          </div>
+          <span class="badge-gold">Live Atelier Ranking</span>
+        </div>
+        <div class="data-table-container">
+          <table class="luxury-table">
+            <thead>
+              <tr>
+                <th>Style / Product</th>
+                <th>Net Revenue</th>
+                <th>Gross Margin ($)</th>
+                <th>Units Sold</th>
+              </tr>
+            </thead>
+            <tbody id="top-styles-tbody">
+              <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Loading sales velocity...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB: LIVE SHOP OPERATIONS (SEGMENT 2)
+         ========================================== -->
+    <section id="tab-live-ops" class="tab-content">
+      <!-- Header & Subtitle -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">⚡ Live Store Operations Pipeline & Dynamic Arena</h2>
+            <span class="badge-emerald" id="live-ops-header-badge">Real-Time Ingestion</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+            Discrete event simulation of physical floor transactions, customer VIP attribution, and warehouse truck deliveries at 60 FPS.
+          </p>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); background:rgba(15,23,42,0.6); border:1px solid var(--border-subtle); padding:6px 12px; border-radius:var(--radius-sm);">
+          <span>⏱️ <b>Simulation Clock:</b> </span><span id="live-ops-clock">Standby</span>
+        </div>
+      </div>
+
+      <!-- Ultra-Compact Luxury Status Strip (~52px) -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; margin-bottom:14px;">
+        <!-- Card 1: Total Sales Revenue -->
+        <div class="live-strip-card" style="border-left-color:var(--emerald);">
+          <div style="min-width:0;">
+            <div class="live-strip-label">Total Sales Revenue</div>
+            <div class="live-strip-val" id="live-ops-revenue">$0.00</div>
+          </div>
+          <span class="badge-emerald" style="font-size:10px; font-weight:700;">LIVE GROSS</span>
+        </div>
+
+        <!-- Card 2: Low Stock Warnings -->
+        <div class="live-strip-card" id="card-low-stock" style="border-left-color:var(--gold-primary);">
+          <div style="min-width:0;">
+            <div class="live-strip-label">Low Stock Warnings</div>
+            <div class="live-strip-val" id="live-ops-low-stock-val">0 Styles</div>
+          </div>
+          <span id="live-ops-stock-badge" class="badge-gold" style="font-size:10px; font-weight:700;">≤ 15 UNITS</span>
+        </div>
+
+        <!-- Card 3: Pipeline Activity -->
+        <div class="live-strip-card" style="border-left-color:var(--indigo);">
+          <div style="min-width:0; flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+              <span class="live-strip-label">Pipeline Activity</span>
+              <span id="live-ops-status-badge" class="badge-status-standby">STANDBY</span>
+            </div>
+            <div id="live-ops-status-text" style="font-size:12px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="Simulation Standby">
+              Monitoring transaction channel...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulation Interactive Controls Toolbar -->
+      <div class="glass-card" style="margin-bottom:14px; padding:12px 18px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+          <!-- Left: Action buttons -->
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="btn btn-primary" id="btn-toggle-live-ops" style="min-width:165px;">
+              ▶️ Start Live Loop
+            </button>
+            <button class="btn btn-secondary" id="btn-step-live-ops" title="Step single simulation cycle">
+              ⚡ Step Tick
+            </button>
+            <button class="btn btn-secondary" id="btn-reset-live-ops" title="Synchronize with SQLite database">
+              🔄 Sync DB Stock
+            </button>
+          </div>
+
+          <!-- Right: Sliders -->
+          <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);">
+              <span>🏷️ <b>Flash Markdown:</b></span>
+              <input type="range" id="live-ops-discount-range" min="0" max="50" step="5" value="0" style="width:110px; accent-color:var(--gold-primary); cursor:pointer;">
+              <span id="live-ops-discount-label" style="font-weight:700; color:var(--gold-light); min-width:32px;">0%</span>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);">
+              <span>⚡ <b>Tick Speed:</b></span>
+              <input type="range" id="live-ops-speed-range" min="0.1" max="1.5" step="0.05" value="0.35" style="width:110px; accent-color:var(--indigo); cursor:pointer;">
+              <span id="live-ops-speed-label" style="font-weight:700; color:var(--indigo-light); min-width:38px;">0.35s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardware-Accelerated 60 FPS HTML5 Canvas Dynamic Arena -->
+      <div class="glass-card" style="padding:0; overflow:hidden; margin-bottom:14px; position:relative; border-radius:12px; border:1px solid #1e293b; background:radial-gradient(circle at 50% 25%, #1e293b 0%, #0f172a 70%, #020617 100%);">
+        <!-- HUD Overlay Bar -->
+        <div class="arena-hud-bar">
+          <div style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#94a3b8;">
+            <span class="pulse-dot" style="background:#10b981; box-shadow:0 0 8px #10b981;"></span>
+            <span>Visual Operations Arena • 60 FPS</span>
+          </div>
+          <div id="arena-hud-pill" class="arena-hud-pill pill-idle">
+            <span id="arena-hud-icon">⚡</span>
+            <span id="arena-hud-label">SIMULATION STANDBY</span>
+          </div>
+        </div>
+
+        <!-- 60 FPS Interactive HTML5 Canvas -->
+        <canvas id="liveArenaCanvas" style="width:100%; height:220px; display:block;"></canvas>
+      </div>
+
+      <!-- Real-Time Warehouse Stock Levels Bar Chart -->
+      <div class="glass-card" style="margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3 class="chart-title" style="margin:0;">Real-Time Warehouse Stock Levels</h3>
+            <div id="live-ops-chart-subtitle" style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+              Dynamic event color highlighting reflects floor purchases and inbound deliveries.
+            </div>
+          </div>
+
+          <!-- Color Key Legend -->
+          <div style="display:flex; gap:12px; font-size:11px; align-items:center; flex-wrap:wrap;">
+            <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#10b981; border-radius:2px;"></span> Restocked</span>
+            <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#f59e0b; border-radius:2px;"></span> Purchased</span>
+            <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#ef4444; border-radius:2px;"></span> Low (≤15)</span>
+            <span style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#334155; border-radius:2px;"></span> Stable</span>
+          </div>
+        </div>
+
+        <div id="chart-live-ops-stock" style="min-height:220px;"></div>
+      </div>
+
+      <!-- Dual Live Activity Ledgers -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <!-- Left: Live Sales Log -->
+        <div class="glass-card" style="padding:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="font-size:14px; font-weight:700; color:var(--emerald); margin:0; display:flex; align-items:center; gap:6px;">
+              <span>📥</span> Live Sales Log
+            </h3>
+            <span class="badge-emerald" style="font-size:10px;">Attributed POS</span>
+          </div>
+          <div id="live-sales-log-container" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+            <div style="text-align:center; padding:16px; color:var(--text-muted); font-size:12px;">Awaiting customer checkout events...</div>
+          </div>
+        </div>
+
+        <!-- Right: Inbound Restocks Log -->
+        <div class="glass-card" style="padding:14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="font-size:14px; font-weight:700; color:var(--indigo-light); margin:0; display:flex; align-items:center; gap:6px;">
+              <span>📤</span> Inbound Restocks Log
+            </h3>
+            <span class="badge-gold" style="font-size:10px;">Depot Deliveries</span>
+          </div>
+          <div id="live-restocks-log-container" style="display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto;">
+            <div style="text-align:center; padding:16px; color:var(--text-muted); font-size:12px;">Awaiting supplier deliveries...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 2: INVENTORY & WAREHOUSE
+         ========================================== -->
+    <section id="tab-inventory" class="tab-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div>
+          <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">Atelier Inventory & Warehouse Reserve</h2>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Multi-location stock balance between Flagship Boutique Floor and Central Reserve Depot.</p>
+        </div>
+        <div style="display:flex; gap:16px; align-items:center;">
+          <div style="background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:var(--radius-md); padding:8px 16px; text-align:right;">
+            <div style="font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Floor Total</div>
+            <div id="inv-summary-shop" style="font-size:17px; font-weight:800; color:var(--gold-light);">0 units</div>
+          </div>
+          <div style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); border-radius:var(--radius-md); padding:8px 16px; text-align:right;">
+            <div style="font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Depot Total</div>
+            <div id="inv-summary-wh" style="font-size:17px; font-weight:800; color:var(--indigo);">0 units</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="data-table-container">
+          <table class="luxury-table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Couture Garment</th>
+                <th>Category</th>
+                <th>Retail Price</th>
+                <th>Floor Stock</th>
+                <th>Depot Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-table-tbody">
+              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading warehouse catalog...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 3: VIP CLIENT CRM
+         ========================================== -->
+    <section id="tab-crm" class="tab-content">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+        <div>
+          <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">VIP Client & Clienteling CRM</h2>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Manage high-net-worth client profiles, sizing, style preferences, and communication authorizations.</p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div>
+            <label class="form-label" style="margin-bottom:4px;">Filter Tier</label>
+            <select id="crm-tier-filter" class="form-control" style="width:170px;" onchange="App.loadCRMData()">
+              <option value="All">All Tiers</option>
+              <option value="Platinum VIP">💎 Platinum VIP</option>
+              <option value="Gold VIP">🥇 Gold VIP</option>
+              <option value="Silver">🥈 Silver</option>
+              <option value="Bronze">🥉 Bronze</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="margin-bottom:4px;">Search Client</label>
+            <input type="text" id="crm-search-input" class="form-control" placeholder="Search by name, email, phone..." style="width:240px;" oninput="App.loadCRMData()">
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="data-table-container">
+          <table class="luxury-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Client Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Tier</th>
+                <th>Lifetime Spend</th>
+                <th>Size</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="crm-customers-tbody">
+              <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Loading VIP clientele...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 4: PRICING & CAMPAIGNS
+         ========================================== -->
+    <section id="tab-campaigns" class="tab-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <div>
+          <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">Pricing Strategies & Flash Campaigns</h2>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Controlled promotional markdowns protected by luxury brand guardrails (max 50% discount cap).</p>
+        </div>
+        <button class="btn btn-primary" id="btn-open-create-campaign">
+          ➕ Launch New Campaign
+        </button>
+      </div>
+
+      <div id="campaigns-card-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:20px;">
+        <div class="glass-card" style="text-align:center; color:var(--text-muted);">Loading campaigns...</div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 5: SHIVI DEEP AGENT
+         ========================================== -->
+    <section id="tab-agent" class="tab-content">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">Shivi Deep Autonomous Retail Agent</h2>
+            <span class="badge-gold">Enterprise Command Center</span>
+            <span class="badge-emerald" id="agent-top-online-badge">🟢 Online & Guarded</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Autonomous multi-agent orchestration for luxury retail, marketing dispatches, boardroom audits, and margin governance.</p>
+        </div>
+      </div>
+
+      <!-- Top Status Metric Strip (4 Cards) -->
+      <div class="agent-status-strip">
+        <div class="agent-status-card" style="border-left: 4px solid var(--emerald);">
+          <div class="agent-status-label">Enterprise Guardrails</div>
+          <div class="agent-status-val" style="color:var(--emerald);">🛡️ Active & Enforced</div>
+          <div class="agent-status-desc">PII Redaction & ≤50% Discount Cap</div>
+        </div>
+        <div class="agent-status-card" style="border-left: 4px solid #3b82f6;">
+          <div class="agent-status-label">Episodic Memory & Skills</div>
+          <div class="agent-status-val" id="agent-metric-memories" style="color:#60a5fa;">🧠 0 Memories</div>
+          <div class="agent-status-desc">4 Pre-Compiled Domain Skills Loaded</div>
+        </div>
+        <div class="agent-status-card" style="border-left: 4px solid #8b5cf6;">
+          <div class="agent-status-label">Execution Environment</div>
+          <div class="agent-status-val" style="color:#a78bfa;">⚡ Python Sandbox</div>
+          <div class="agent-status-desc">5 Core Tools & Sandbox Ready</div>
+        </div>
+        <div class="agent-status-card" style="border-left: 4px solid var(--amber);">
+          <div class="agent-status-label">HITL Steering Queue</div>
+          <div class="agent-status-val" id="agent-metric-approvals" style="color:var(--amber);">🚦 0 Approvals</div>
+          <div class="agent-status-desc">Human Oversight Gatekeeper</div>
+        </div>
+      </div>
+
+      <!-- 6 One-Click Operational Dispatchers -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11.5px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:8px; letter-spacing:0.5px;">⚡ Shivi 1-Click Operational Dispatchers:</div>
+        <div class="agent-dispatchers-grid">
+          <button class="agent-dispatch-btn" onclick="App.triggerAgentAction('morning_opening')" title="Audits stock, checks campaigns & birthdays, generates Opening PDF">
+            🌅 Morning Opening
+          </button>
+          <button class="agent-dispatch-btn" onclick="App.triggerAgentAction('evening_closing')" title="Reconciles daily sales, audits transfers, generates Closing Audit PDF">
+            🌆 Evening Closing
+          </button>
+          <button class="agent-dispatch-btn" onclick="App.triggerAgentAction('fashion_news')" title="Curates trending fashion news and dispatches to patrons via Email & WhatsApp">
+            📰 Fashion News
+          </button>
+          <button class="agent-dispatch-btn" onclick="App.triggerAgentAction('campaign_launch')" title="Crafts promotional copy and broadcasts campaign alerts to patrons">
+            📢 Launch Campaign
+          </button>
+          <button class="agent-dispatch-btn" onclick="App.triggerAgentAction('restock')" title="Scans restocked products and alerts interested clients with 24-hr reserve hold">
+            🔔 Restock Alert
+          </button>
+          <button class="agent-dispatch-btn" onclick="App.triggerAgentAction('birthday')" title="Finds upcoming birthdays and dispatches 25% birthday vouchers">
+            🎂 Birthday Perks
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Action Trigger Feedback Status -->
+      <div id="agent-trigger-status" style="display:none; margin-bottom:16px; padding:12px 18px; background:rgba(212,175,55,0.15); border:1px solid var(--gold-primary); border-radius:var(--radius-md); font-weight:600; color:var(--gold-light);"></div>
+
+      <!-- Official Boardroom PDF Ready Banner -->
+      <div id="agent-pdf-banner" class="agent-pdf-banner" style="display:none;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <span style="font-size:24px;">📄</span>
+          <div>
+            <div style="font-size:14px; font-weight:700; color:#10b981;" id="agent-pdf-title">Boardroom PDF Ready</div>
+            <div style="font-size:12px; color:var(--text-secondary);" id="agent-pdf-desc">Official PDF generated autonomously by Shivi.</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <a id="agent-pdf-download-btn" href="#" target="_blank" class="btn btn-primary" style="font-size:12px; padding:6px 16px; text-decoration:none;">
+            📥 Download Official PDF
+          </a>
+          <button class="btn btn-secondary" style="font-size:11px; padding:6px 10px;" onclick="document.getElementById('agent-pdf-banner').style.display='none'">✕</button>
+        </div>
+      </div>
+
+      <!-- Dynamic Execution Plan & HITL Queue (Dual Column) -->
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:20px; margin-bottom:24px;">
+        <!-- Left: Current Dynamic Orchestration Plan -->
+        <div class="glass-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 class="chart-title">Current Agent Execution Plan</h3>
+            <span class="badge-emerald" id="agent-plan-status-badge">Live State</span>
+          </div>
+          <div id="agent-plan-container">
+            <div style="text-align:center; padding:20px; color:var(--text-muted);">Loading active plan...</div>
+          </div>
+        </div>
+
+        <!-- Right: Human-in-the-Loop Steering Authorizations -->
+        <div class="glass-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 class="chart-title">Human-in-the-Loop (HITL) Queue</h3>
+            <span class="badge-gold">Brand Guardrails</span>
+          </div>
+          <div id="agent-approvals-list">
+            <div style="text-align:center; padding:20px; color:var(--text-muted);">Loading authorizations...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           SHIVI DEEP AGENT WORKSPACE SUB-TABS
+           ========================================== -->
+      <div class="agent-subtabs-nav">
+        <button class="agent-subtab-btn active" onclick="App.switchAgentSubTab('client-previews')">
+          📱 Client Previews (Email & WhatsApp)
+        </button>
+        <button class="agent-subtab-btn" onclick="App.switchAgentSubTab('email-gateway')">
+          ⚙️ Automated Email Gateway
+        </button>
+        <button class="agent-subtab-btn" onclick="App.switchAgentSubTab('guardrails-inspector')">
+          🛡️ Guardrails & PII Shield Inspector
+        </button>
+      </div>
+
+      <!-- ------------------------------------------
+           SUB-TAB 1: CLIENT PREVIEWS
+           ------------------------------------------ -->
+      <div id="subtab-client-previews" class="agent-subtab-content active">
+        <!-- Topic Selection & Refresh Bar -->
+        <div class="glass-card" style="margin-bottom:16px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div style="flex:1; min-width:260px;">
+              <label class="form-label" style="margin-bottom:4px;">Curate Fashion News by Runway Theme:</label>
+              <select id="agent-news-topic-select" class="form-control" onchange="App.onAgentTopicChanged()">
+                <option value="">🌟 All Runway Trends (Auto-Rotate)</option>
+                <option value="paris haute couture fashion week runway">👗 Paris & Milan Haute Couture</option>
+                <option value="quiet luxury bespoke tailoring fashion">💎 Quiet Luxury & Bespoke Tailoring</option>
+                <option value="designer silk cashmere knitwear fashion">🧣 Cashmere, Silk & Fine Knitwear</option>
+                <option value="high fashion evening wear red carpet">✨ High Fashion Evening Wear & Galas</option>
+                <option value="luxury resort wear bohemian fashion">🏖️ Resort Wear & Bohemian Elegance</option>
+              </select>
+            </div>
+            <div style="padding-top:20px;">
+              <button class="btn btn-primary" id="btn-refresh-news" onclick="App.refreshAgentNews(true)">
+                🔄 Refresh Live News
+              </button>
+            </div>
+          </div>
+
+          <!-- News Source Status Banner -->
+          <div id="agent-news-status-banner" style="margin-top:12px; padding:10px 14px; border-radius:var(--radius-md); font-size:12.5px; display:flex; align-items:center; gap:8px;">
+            <span style="font-size:18px;">🌐</span>
+            <div>
+              <span id="agent-news-source-title" style="font-weight:700;">Curated Trends Active</span>
+              <div id="agent-news-source-subtitle" style="font-size:11px; opacity:0.85;">Connected to Live Runway Wire or Atelier Fallback.</div>
+            </div>
+          </div>
+
+          <!-- Headlines Explorer Accordion -->
+          <details class="luxury-details" style="margin-top:14px;">
+            <summary>📰 Latest Fashion Headlines & Sources Explorer</summary>
+            <div id="agent-news-headlines-list" style="padding-top:8px; font-size:12.5px; color:var(--text-secondary); line-height:1.6;">
+              Loading headlines...
+            </div>
+          </details>
+
+          <!-- Recipient Selector -->
+          <div style="margin-top:14px;">
+            <label class="form-label" style="margin-bottom:4px;">Select Recipient to Preview Formatted Dispatch:</label>
+            <select id="agent-preview-recipient-select" class="form-control" onchange="App.onAgentRecipientChanged()"></select>
+          </div>
+        </div>
+
+        <!-- Dual Column Preview: Email & WhatsApp -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+          <!-- Left: Luxury HTML Email Newsletter -->
+          <div class="glass-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h4 style="font-family:var(--font-serif); font-size:16px; color:var(--gold-light); margin:0;">📧 Luxury HTML Email Newsletter</h4>
+              <span id="agent-smtp-status-badge" class="badge-gold">SMTP Status</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+              Subject: <b id="agent-preview-email-subject" style="color:var(--text-primary);">Mishika Fashion Alert</b>
+            </div>
+
+            <div id="agent-smtp-status-callout" style="margin-bottom:12px; padding:8px 12px; border-radius:var(--radius-sm); font-size:11.5px;"></div>
+
+            <!-- Email Container Preview -->
+            <div class="email-preview-wrapper">
+              <div class="email-preview-header" id="agent-email-preview-to">
+                <b>To:</b> VIP Patron &lt;client@example.com&gt;
+              </div>
+              <div class="email-preview-body" id="agent-email-preview-body">
+                <div style="text-align:center; padding:40px 20px; color:#64748b;">Loading newsletter preview...</div>
+              </div>
+            </div>
+
+            <!-- Email Actions -->
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:14px;">
+              <button class="btn btn-primary" id="btn-agent-send-smtp" onclick="App.sendCurrentRecipientEmail()">
+                🚀 Send Real Email via Gmail SMTP
+              </button>
+              <div style="display:flex; gap:10px;">
+                <button class="btn btn-secondary" style="flex:1; font-size:12px;" onclick="App.sendBatchEmails()">
+                  📢 Send to ALL VIP Clients
+                </button>
+                <a id="btn-agent-mailto" href="#" class="btn btn-secondary" style="flex:1; font-size:12px; text-decoration:none; text-align:center;" target="_blank">
+                  ✉️ Open Draft in Email App
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: WhatsApp Mobile Chat Bubble -->
+          <div class="glass-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <h4 style="font-family:var(--font-serif); font-size:16px; color:var(--gold-light); margin:0;">💬 WhatsApp Mobile Chat Bubble</h4>
+              <span class="badge-emerald">1-Click wa.me</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+              Recipient: <b id="agent-preview-wa-phone" style="color:var(--text-primary);">+1-555-0101</b>
+            </div>
+
+            <!-- WhatsApp Mobile Mockup -->
+            <div class="wa-mockup-wrapper">
+              <div class="wa-mockup-header">
+                <span style="font-size:20px;">👗</span>
+                <div>
+                  <div style="font-size:13px; font-weight:700;">Mishika Fashion Boutique</div>
+                  <div style="font-size:10px; opacity:0.85;">Official Concierge • Online</div>
+                </div>
+              </div>
+              <div class="wa-mockup-body">
+                <div class="wa-chat-bubble">
+                  <div id="agent-wa-bubble-text" style="white-space:pre-wrap;">Loading WhatsApp copy...</div>
+                  <div class="wa-bubble-time" id="agent-wa-bubble-time">12:00 PM ✓✓</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- WhatsApp Actions -->
+            <div style="margin-top:14px;">
+              <a id="btn-agent-wa-me" href="#" target="_blank" class="btn btn-primary" style="display:block; text-align:center; text-decoration:none; width:100%;">
+                📲 Send Real WhatsApp via wa.me
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Test to User's Own Device -->
+        <details class="luxury-details">
+          <summary>🚀 Send Live Test Message to Your Own Phone or Email</summary>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding-top:10px;">
+            <div>
+              <div style="font-weight:700; color:var(--gold-light); font-size:13px; margin-bottom:6px;">📱 Test via WhatsApp:</div>
+              <input type="text" id="agent-test-my-phone" class="form-control" placeholder="e.g. +919876543210 or +15550101" style="margin-bottom:8px;">
+              <button class="btn btn-secondary" style="width:100%; font-size:12px;" onclick="App.launchTestMyWhatsApp()">
+                📲 Launch WhatsApp with Drafted Text
+              </button>
+            </div>
+            <div>
+              <div style="font-weight:700; color:var(--gold-light); font-size:13px; margin-bottom:6px;">📧 Test via Email:</div>
+              <input type="email" id="agent-test-my-email" class="form-control" placeholder="you@company.com" style="margin-bottom:8px;">
+              <div style="display:flex; gap:8px;">
+                <button class="btn btn-primary" style="flex:1.2; font-size:12px;" onclick="App.sendTestMyEmail()">
+                  🚀 Send Real Test Email
+                </button>
+                <a id="btn-test-my-email-draft" href="#" target="_blank" class="btn btn-secondary" style="flex:1; font-size:12px; text-decoration:none; text-align:center;">
+                  ✉️ Open Draft
+                </a>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Automated Background Sending Guide Accordion -->
+        <details class="luxury-details">
+          <summary>🔌 Automated Background Sending Guide (SMTP & Twilio / Meta Cloud API)</summary>
+          <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; padding-top:8px;">
+            <p><b>How automated background delivery operates in Shivi:</b></p>
+            <ul style="padding-left:20px; margin-top:6px;">
+              <li><b>1-Click Direct Sending (No Setup Required)</b>: The <code>wa.me</code> WhatsApp links and <code>mailto:</code> links work immediately in your browser on desktop and mobile without requiring any paid APIs.</li>
+              <li><b>Autonomous Email (SMTP)</b>: Provide your SMTP server credentials in Tab 2 or <code>.env</code> file (<code>SMTP_HOST=smtp.gmail.com</code>, <code>SMTP_PORT=587</code>, <code>SMTP_USER</code>, <code>SMTP_PASS</code>). Shivi autonomously transmits full luxury HTML emails directly to inboxes.</li>
+              <li><b>Audit Logging</b>: Every outgoing dispatch is permanently recorded in the local SQLite <code>agent_communications</code> ledger below.</li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- Dispatched Customer Communications History Ledger -->
+        <div class="glass-card" style="margin-top:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h4 style="font-family:var(--font-serif); font-size:16px; color:var(--gold-light); margin:0;">📋 Dispatched Customer Communications History</h4>
+            <button class="btn btn-secondary" style="font-size:11px; padding:4px 12px;" onclick="App.loadAgentCommunications()">🔄 Refresh Ledger</button>
+          </div>
+          <div class="data-table-container">
+            <table class="luxury-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Recipient Patron</th>
+                  <th>Channel</th>
+                  <th>Category</th>
+                  <th>Subject / Direct Message</th>
+                  <th>Delivery Status</th>
+                </tr>
+              </thead>
+              <tbody id="agent-comms-table-tbody">
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Loading communications ledger...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ------------------------------------------
+           SUB-TAB 2: AUTOMATED EMAIL GATEWAY
+           ------------------------------------------ -->
+      <div id="subtab-email-gateway" class="agent-subtab-content">
+        <div class="glass-card" style="padding:20px;">
+          <h4 style="font-family:var(--font-serif); font-size:18px; color:var(--gold-light); margin:0 0 4px 0;">⚙️ Autonomous Email Gateway Settings</h4>
+          <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px;">Configure Gmail App Password or standard SMTP credentials for automated background delivery of Morning Briefings, Evening Audits, and VIP Campaigns.</p>
+
+          <div id="agent-email-gateway-banner" style="margin-bottom:18px; padding:12px 16px; border-radius:var(--radius-md); font-size:13px; font-weight:600;"></div>
+
+          <!-- Step-by-Step Guide Accordion -->
+          <details class="luxury-details" style="margin-bottom:18px;">
+            <summary>📖 Step-by-Step Guide: How to Generate a Gmail App Password in 60 Seconds</summary>
+            <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.6; padding-top:8px;">
+              <ol style="padding-left:20px;">
+                <li>Go to your <b><a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank" style="color:var(--gold-light);">Google Account Security & 2-Step Verification</a></b> and confirm 2-Step Verification is <b>ON</b>.</li>
+                <li>Go directly to <b><a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:var(--gold-light);">Google App Passwords</a></b>.</li>
+                <li>Under <b>App name</b>, type <code>Shivi Boutique Agent</code> and click <b>Create</b>.</li>
+                <li>Google displays a yellow box with a <b>16-character password</b> (e.g. <code>abcd efgh ijkl mnop</code>).</li>
+                <li>Copy that 16-character code and paste it into the <b>Gmail App Password</b> field below!</li>
+              </ol>
+            </div>
+          </details>
+
+          <!-- Settings Form -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+            <div>
+              <label class="form-label">Gmail Address / Sender Email:</label>
+              <input type="email" id="email-cfg-user" class="form-control" placeholder="your_boutique@gmail.com">
+            </div>
+            <div>
+              <label class="form-label">16-Character Gmail App Password:</label>
+              <input type="password" id="email-cfg-pass" class="form-control" placeholder="xxxx xxxx xxxx xxxx">
+            </div>
+            <div>
+              <label class="form-label">Admin Email (Receives Morning & Evening PDF Audits):</label>
+              <input type="email" id="email-cfg-admin" class="form-control" placeholder="admin@yourboutique.com">
+            </div>
+            <div>
+              <label class="form-label">Sender Display Name:</label>
+              <input type="text" id="email-cfg-from-name" class="form-control" value="Mishika Fashion Boutique Concierge">
+            </div>
+          </div>
+
+          <!-- Advanced SMTP Settings Accordion -->
+          <details class="luxury-details" style="margin-bottom:16px;">
+            <summary>🛠️ Advanced SMTP Server Settings (Pre-configured for Gmail)</summary>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding-top:10px;">
+              <div>
+                <label class="form-label">SMTP Host:</label>
+                <input type="text" id="email-cfg-host" class="form-control" value="smtp.gmail.com">
+              </div>
+              <div>
+                <label class="form-label">SMTP Port:</label>
+                <input type="number" id="email-cfg-port" class="form-control" value="587">
+              </div>
+            </div>
+          </details>
+
+          <div style="margin-bottom:20px;">
+            <div style="font-weight:700; color:var(--text-primary); font-size:13px; margin-bottom:8px;">🤖 Autonomous Dispatch Policies:</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary); cursor:pointer;">
+                <input type="checkbox" id="email-cfg-auto-admin" checked>
+                Automatically email Morning & Evening PDF Audits to Admin
+              </label>
+              <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary); cursor:pointer;">
+                <input type="checkbox" id="email-cfg-auto-cust" checked>
+                Automatically email Fashion News & Campaigns to Customers
+              </label>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btn-save-email-config" onclick="App.saveEmailConfiguration()" style="width:100%; padding:10px; font-size:13px;">
+            💾 Save & Activate Email Settings
+          </button>
+
+          <!-- SMTP Connection Test Tool -->
+          <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-subtle);">
+            <h5 style="font-family:var(--font-serif); font-size:15px; color:var(--gold-light); margin:0 0 4px 0;">🧪 Test SMTP Connection & Send Verification Email</h5>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Verify live socket handshake and send a test verification email to confirm delivery.</p>
+
+            <div style="display:flex; gap:12px; align-items:center;">
+              <input type="email" id="email-test-target" class="form-control" placeholder="test@yourdomain.com" style="flex:1;">
+              <button class="btn btn-secondary" id="btn-run-email-test" onclick="App.runEmailConnectionTest()">
+                🧪 Send Test Email
+              </button>
+            </div>
+            <div id="agent-email-test-feedback" style="display:none; margin-top:12px; padding:10px 14px; border-radius:var(--radius-sm); font-size:12.5px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ------------------------------------------
+           SUB-TAB 3: GUARDRAILS & PII INSPECTOR
+           ------------------------------------------ -->
+      <div id="subtab-guardrails-inspector" class="agent-subtab-content">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+          <!-- PII Masking Live Inspector -->
+          <div class="glass-card" style="padding:20px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <span style="font-size:20px;">🔒</span>
+              <h4 style="font-family:var(--font-serif); font-size:16px; color:var(--gold-light); margin:0;">Real-Time PII Redaction Demonstration</h4>
+            </div>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Detects and redacts sensitive Personally Identifiable Information (customer emails & phone numbers) before public logging or telemetry dispatch.</p>
+
+            <label class="form-label">Input text containing sensitive client data:</label>
+            <textarea id="agent-pii-input" class="form-control" style="height:90px; margin-bottom:10px; font-size:12.5px;" oninput="App.onPIIInputChanged()">Contact VIP patron Elena Rostova at elena.rostova@vogue-elegance.com or call her private line +1-555-0101 regarding her reserved linen gown.</textarea>
+
+            <button class="btn btn-secondary" style="font-size:12px; margin-bottom:12px;" onclick="App.runPIIRedaction()">
+              🔒 Redact PII Now
+            </button>
+
+            <label class="form-label">Sanitized Public / Telemetry Output:</label>
+            <pre id="agent-pii-output" style="background:#030712; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:12px; font-family:var(--font-mono); font-size:12px; color:#38bdf8; white-space:pre-wrap; min-height:60px;"></pre>
+          </div>
+
+          <!-- Promotional Discount Cap Validator -->
+          <div class="glass-card" style="padding:20px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <span style="font-size:20px;">🏷️</span>
+              <h4 style="font-family:var(--font-serif); font-size:16px; color:var(--gold-light); margin:0;">Promotional Discount Cap Validator</h4>
+            </div>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">Prevents catastrophic margin erosion by capping markdowns at 50.0% max threshold unless super-admin override is authorized.</p>
+
+            <label class="form-label">Test Promotional Discount (%):</label>
+            <div style="display:flex; gap:12px; align-items:center; margin-bottom:14px;">
+              <input type="number" id="agent-discount-input" class="form-control" value="65" min="0" max="90" step="5" style="width:120px;" oninput="App.onDiscountInputChanged()">
+              <input type="range" id="agent-discount-slider" min="0" max="90" step="5" value="65" style="flex:1;" oninput="document.getElementById('agent-discount-input').value = this.value; App.onDiscountInputChanged();">
+            </div>
+
+            <button class="btn btn-secondary" style="font-size:12px; margin-bottom:14px;" onclick="App.runDiscountValidation()">
+              🛡️ Validate Safety Boundary
+            </button>
+
+            <div id="agent-discount-feedback" style="padding:12px 16px; border-radius:var(--radius-md); font-size:12.5px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==========================================
+         TAB 6: DATA SCIENCE SANDBOX
+         ========================================== -->
+    <section id="tab-sandbox" class="tab-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+        <div>
+          <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">Data Science Execution Sandbox</h2>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Execute real-time Python analytics against live SQLite transactions and inventory tables.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <select id="sandbox-preset-select" class="form-control" style="width:280px;"></select>
+          <button class="btn btn-secondary" id="btn-sandbox-reload" title="Reset to preset source">
+            🔄 Reload
+          </button>
+          <button class="btn btn-primary" id="btn-sandbox-execute">
+            ▶️ Run Script
+          </button>
+        </div>
+      </div>
+
+      <div class="glass-card" style="padding:16px;">
+        <label class="form-label" style="margin-bottom:8px;">Python Execution Environment (Live DB Connected)</label>
+        <textarea id="sandbox-editor" class="form-control" style="font-family:var(--font-mono); font-size:13px; height:240px; resize:vertical; line-height:1.45; background:#070b14; color:#38bdf8;" spellcheck="false"></textarea>
+
+        <div id="sandbox-output-container" style="display:none; margin-top:16px;">
+          <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px;">Console Execution Output:</div>
+          <pre id="sandbox-output-pre" style="background:#030712; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:14px; font-family:var(--font-mono); font-size:12.5px; overflow-x:auto; white-space:pre-wrap;"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       SLIDE-OUT COPILOT DRAWER
+       ========================================== -->
+  <aside class="copilot-drawer" id="copilot-drawer">
+    <div class="drawer-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:20px;">✨</span>
+        <div>
+          <h3 style="font-family:var(--font-serif); font-size:16px; font-weight:700; color:var(--gold-light); margin:0;">Shivi AI Copilot</h3>
+          <div style="font-size:11px; color:var(--text-muted);">Boutique Intelligence Copilot</div>
+        </div>
+      </div>
+      <button class="modal-close" id="btn-close-copilot">✕</button>
+    </div>
+
+    <!-- Drawer Controls Bar -->
+    <div style="padding:10px 18px; background:rgba(0,0,0,0.3); border-bottom:1px solid var(--border-subtle); display:flex; gap:10px;">
+      <select id="copilot-model-select" class="form-control" style="flex:1; font-size:12px; padding:6px 10px;"></select>
+      <select id="copilot-persona-select" class="form-control" style="flex:1.2; font-size:12px; padding:6px 10px;"></select>
+    </div>
+
+    <!-- Chat Messages Stream -->
+    <div class="drawer-body" id="copilot-chat-body">
+      <div class="chat-message assistant">
+        <div class="chat-bubble">
+          👋 <b>Welcome to Mishika Fashion Boutique Executive Studio.</b> Live real-time transactions, warehouse stock, and VIP customer CRM are loaded. How may I assist your retail strategy today?
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input Footer -->
+    <div class="drawer-footer">
+      <div class="chat-input-row">
+        <input type="text" id="copilot-chat-input" class="form-control" placeholder="Ask about sales, stockouts, VIP trends..." autocomplete="off">
+        <button class="btn btn-primary" id="btn-copilot-send" style="padding:0 16px;">
+          ➤
+        </button>
+      </div>
+      <div style="font-size:10.5px; color:var(--text-muted); margin-top:8px; text-align:center;">
+        Powered by High-Speed SSE Streaming & Local Privacy Engine
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==========================================
+       MODAL: STOCK TRANSFER
+       ========================================== -->
+  <div class="modal-overlay" id="modal-transfer-stock">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">🔄 Transfer Atelier Stock</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-transfer-stock">
+        <div class="modal-body">
+          <input type="hidden" id="transfer-product-id">
+
+          <div style="margin-bottom:16px; padding:12px; background:rgba(212,175,55,0.08); border-radius:var(--radius-sm); border:1px solid rgba(212,175,55,0.2);">
+            <div style="font-weight:700; color:var(--gold-light); font-size:15px;" id="transfer-product-name">Product Name</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:4px; display:flex; gap:16px;">
+              <span>Floor Stock: <b id="transfer-shop-avail">0</b> units</span>
+              <span>Depot Reserve: <b id="transfer-wh-avail">0</b> units</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Transfer Direction</label>
+            <select id="transfer-direction" class="form-control" required>
+              <option value="wh_to_shop">🏭 Central Depot ➔ 👗 Shop Floor</option>
+              <option value="shop_to_wh">👗 Shop Floor ➔ 🏭 Central Depot</option>
+            </select>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div class="form-group">
+              <label class="form-label">Size Variant</label>
+              <select id="transfer-size" class="form-control" required>
+                <option value="Standard">Standard</option>
+                <option value="XS">XS</option>
+                <option value="S">S</option>
+                <option value="M" selected>M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Quantity (Units)</label>
+              <input type="number" id="transfer-qty" class="form-control" min="1" max="100" value="5" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Transfer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: EDIT VIP CUSTOMER CONTACT
+       ========================================== -->
+  <div class="modal-overlay" id="modal-edit-customer">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ Edit VIP Client Details</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-edit-customer">
+        <div class="modal-body">
+          <input type="hidden" id="edit-cust-id">
+
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="edit-cust-name" class="form-control" required>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="text" id="edit-cust-phone" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="edit-cust-email" class="form-control" required>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+            <div class="form-group">
+              <label class="form-label">Size</label>
+              <input type="text" id="edit-cust-size" class="form-control" placeholder="e.g. S, M">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Style Pref</label>
+              <input type="text" id="edit-cust-style" class="form-control" placeholder="e.g. Silk, Minimal">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Loyalty Tier</label>
+              <select id="edit-cust-tier" class="form-control">
+                <option value="Bronze">Bronze</option>
+                <option value="Silver">Silver</option>
+                <option value="Gold VIP">Gold VIP</option>
+                <option value="Platinum VIP">Platinum VIP</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:20px;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
+              <input type="checkbox" id="edit-cust-opt-wa"> Opt-in WhatsApp Updates
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px;">
+              <input type="checkbox" id="edit-cust-opt-email"> Opt-in Email Lookbooks
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: CREATE CAMPAIGN
+       ========================================== -->
+  <div class="modal-overlay" id="modal-create-campaign">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">🏷️ Launch Seasonal Promotional Campaign</h3>
+        <button class="modal-close">✕</button>
+      </div>
+      <form id="form-create-campaign">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Campaign Title</label>
+            <input type="text" id="new-camp-name" class="form-control" placeholder="e.g. Mid-Season Couture Celebration" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Campaign Narrative / Description</label>
+            <textarea id="new-camp-desc" class="form-control" rows="3" placeholder="Target audience, styling notes, and boutique event focus..." required></textarea>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div class="form-group">
+              <label class="form-label">Discount Percentage (%)</label>
+              <input type="number" id="new-camp-discount" class="form-control" min="1" max="50" step="1" value="15" required>
+              <span style="font-size:11px; color:var(--text-muted); margin-top:4px; display:block;">Max 50% luxury brand safety guardrail</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target Garment Category</label>
+              <select id="new-camp-cat" class="form-control" required>
+                <option value="Dresses">Dresses</option>
+                <option value="Bottoms">Bottoms</option>
+                <option value="Tops">Tops</option>
+                <option value="Outerwear">Outerwear</option>
+                <option value="Knitwear">Knitwear</option>
+                <option value="All">All Categories</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+          <button type="submit" class="btn btn-primary">Publish Campaign</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       TOAST ALERTS CONTAINER
+       ========================================== -->
+  <div id="toast-container"></div>
+
+  <!-- Client Application Scripts -->
+  <script src="/js/api.js?v=2.0.3"></script>
+  <script src="/js/charts.js?v=2.0.3"></script>
+  <script src="/js/app.js?v=2.0.3"></script>
+</body>
+</html>
