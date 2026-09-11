@@ -10,8 +10,20 @@ logger = setup_logging("sentiment_tracker")
 
 class SentimentTrackingEngine:
     """
-    Analyzes customer reviews to extract operational sentiment and identify pain points.
-    Uses a rule-based lexicon for categorization and scoring.
+    Analyzes customer salon reviews, feedback, and social sentiment to extract operational pain points.
+    
+    Working:
+    - Tokenizes review text and scores sentiment based on luxury lexicon polarities (-1.0 to +1.0).
+    - Categorizes feedback across four core operational pillars:
+        - Service & Staff (wait times, attentiveness, queue management)
+        - Pricing & Value (perceived value, price fairness)
+        - Product Quality (craftsmanship, fabric integrity, defects)
+        - Store Environment (cleanliness, salon ambiance, fitting room layout)
+    - Automatically flags critical negative complaints (score <= -0.3) for concierge resolution.
+    
+    Why Required:
+    - Luxury boutique retention depends on white-glove service standards; early detection of staff
+      friction or quality defects prevents patron churn.
     """
     def __init__(self):
         """Initializes the engine with category-specific keywords."""

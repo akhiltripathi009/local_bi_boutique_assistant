@@ -8,8 +8,32 @@ try:
     from src.core.logger import setup_logging
     from src.core.config import DB_PATH
     from src.core.catalog import CATALOG, register_product
+    from src.core.constants import (
+        DBTable,
+        StockLocation,
+        ApparelSize,
+        CampaignStatus,
+        ApprovalStatus,
+        LoyaltyTier,
+        SalesChannel,
+        Actors,
+        OperationalThresholds,
+        CompetitorBrands,
+    )
 except ImportError:
     from logger_config import setup_logging
+    from src.core.constants import (
+        DBTable,
+        StockLocation,
+        ApparelSize,
+        CampaignStatus,
+        ApprovalStatus,
+        LoyaltyTier,
+        SalesChannel,
+        Actors,
+        OperationalThresholds,
+        CompetitorBrands,
+    )
     # CATALOG imported at top-level
     DB_PATH = "boutique_bi.db"
 
@@ -18,9 +42,17 @@ logger = setup_logging("database_manager")
 
 class DatabaseManager:
     """
-    Core engine for managing all SQLite database interactions.
-    Handles schema verification, transaction logging (sales/purchases), 
-    competitor benchmarking, and stock level tracking.
+    Core persistence engine for all SQLite database operations across the boutique enterprise.
+    
+    Working:
+    - Automatically provisions and self-heals the relational database schema across 13 core tables.
+    - Manages transactional ledgers (sales, restocks, stock transfers, procurement orders).
+    - Enforces dual-inventory isolation between Shop Floor size matrix and Warehouse Reserve.
+    - Implements customer 360 dossiers, promotional campaigns, agent memories, and HITL approval queues.
+    
+    Why Required:
+    - Provides a fast, zero-configuration local persistence layer that requires no external database
+      servers (e.g. Postgres or Redis), ensuring privacy, offline operability, and rapid execution.
     """
     def __init__(self, db_path: str = DB_PATH):
         """
@@ -932,16 +964,46 @@ class DatabaseManager:
     # ==========================================
     # PORTAL FEATURE 1: SHOP ⇄ WAREHOUSE STOCK TRANSFER
     # ==========================================
-    def transfer_stock(self, product_id: str, size_variant: str, source: str, destination: str, quantity: int, notes: str = "", performed_by: str = "Portal Admin") -> Tuple[bool, str]:
+    def transfer_stock(
+        self,
+        product_id: str,
+        size_variant: str,
+        source: str,
+        destination: str,
+        quantity: int,
+        notes: str = "",
+        performed_by: str = Actors.PORTAL_ADMIN
+    ) -> Tuple[bool, str]:
         """
-        Moves product stock between Shop Floor and Warehouse Reserve.
-        Items inside warehouse are isolated from shop stock.
+        Moves product inventory atomically between Shop Floor and Warehouse Reserve.
+        
+        Working:
+        - Validates location parameters ('shop' or 'warehouse'), ensuring source != destination.
+        - Verifies stock availability for the requested size variant(s) before updating.
+        - Executes an atomic SQL transaction: decrements source, increments destination with
+          ON CONFLICT upsert, and records an immutable entry in `stock_transfers` ledger.
+        
+        Why Required:
+        - Enforces dual-location inventory integrity: customer purchases can only deplete Shop Floor
+          stock, while bulk supplier deliveries arrive in Warehouse Reserve until staff transfers them.
+          
+        Args:
+            product_id (str): SKU identifier (e.g. 'P001').
+            size_variant (str): Specific size ('S', 'M', 'L', 'XL') or 'ALL'.
+            source (str): Origin location ('shop' or 'warehouse').
+            destination (str): Target location ('shop' or 'warehouse').
+            quantity (int): Number of units to relocate (must be > 0).
+            notes (str): Optional audit comments or replenishment reason.
+            performed_by (str): Identity of the user or system trigger.
+            
+        Returns:
+            Tuple[bool, str]: Success flag and human-readable confirmation or error message.
         """
         source = source.lower().strip()
         destination = destination.lower().strip()
 
-        if source not in ("shop", "warehouse") or destination not in ("shop", "warehouse"):
-            return False, "Source and destination must be either 'shop' or 'warehouse'."
+        if source not in (StockLocation.CODE_SHOP, StockLocation.CODE_WAREHOUSE) or destination not in (StockLocation.CODE_SHOP, StockLocation.CODE_WAREHOUSE):
+            return False, f"Source and destination must be either '{StockLocation.CODE_SHOP}' or '{StockLocation.CODE_WAREHOUSE}'."
 
         if source == destination:
             return False, "Source and destination locations cannot be the same."
@@ -950,7 +1012,7 @@ class DatabaseManager:
             return False, "Transfer quantity must be greater than zero."
 
         product_name = CATALOG.get(product_id, {}).get("name", product_id)
-        valid_sizes = ['S', 'M', 'L', 'XL'] if size_variant == "ALL" else [size_variant]
+        valid_sizes = list(ApparelSize.ALL_SIZES) if size_variant == "ALL" else [size_variant]
 
         try:
             conn = sqlite3.connect(self.db_path)
@@ -1088,7 +1150,32 @@ class DatabaseManager:
         initial_warehouse_stock: Dict[str, int]
     ) -> Tuple[bool, str]:
         """
-        Dynamically registers a new merchandise style into catalog, shop stock, and warehouse stock.
+        Dynamically provisions a new luxury merchandise style across the database and in-memory catalog.
+        
+        Working:
+        1. Validates SKU uniqueness, non-empty naming, and positive pricing margins.
+        2. Records the style in `custom_products` table for permanent retention.
+        3. Registers the style into the in-memory `CATALOG` so analytics and simulation recognize it.
+        4. Seeds Shop Floor stock and Warehouse Reserve across standard apparel size curves ('S', 'M', 'L', 'XL').
+        5. Seeds circuit breaker limits (max capacity 150 units, sales and purchases enabled).
+        6. Seeds tiered competitor pricing benchmarks (Velvet & Vine, Avenue Apparel, Minimalist Thread).
+        
+        Why Required:
+        - Enables boutique merchants to launch capsule collections or emergency supplier styles
+          on the fly without schema migrations or server restarts.
+          
+        Args:
+            product_id (str): Unique SKU code (e.g. 'P021').
+            name (str): Product name.
+            cost (float): Wholesale acquisition unit cost.
+            price (float): Retail selling price.
+            color (str): Hex color code for UI visualization chips.
+            category (str): Merchandise classification (e.g. 'Outerwear').
+            initial_shop_stock (Dict[str, int]): Initial units for shop floor size matrix.
+            initial_warehouse_stock (Dict[str, int]): Initial units for warehouse reserve.
+            
+        Returns:
+            Tuple[bool, str]: Success flag and status message.
         """
         product_id = product_id.strip().upper()
         name = name.strip()
@@ -1116,7 +1203,7 @@ class DatabaseManager:
             register_product(product_id, name, cost, price, color, category)
 
             # 3. Seed Shop Floor Size Matrix Stock
-            for size in ['S', 'M', 'L', 'XL']:
+            for size in ApparelSize.ALL_SIZES:
                 s_qty = initial_shop_stock.get(size, 10)
                 cursor.execute("""
                     INSERT INTO size_matrix_stock (product_id, size_variant, stock_on_hand)
@@ -1124,7 +1211,7 @@ class DatabaseManager:
                 """, (product_id, size, s_qty))
 
             # 4. Seed Warehouse Stock
-            for size in ['S', 'M', 'L', 'XL']:
+            for size in ApparelSize.ALL_SIZES:
                 w_qty = initial_warehouse_stock.get(size, 15)
                 cursor.execute("""
                     INSERT INTO warehouse_stock (product_id, size_variant, stock_on_hand)
@@ -1134,22 +1221,22 @@ class DatabaseManager:
             # 5. Seed Store Circuit Controls
             cursor.execute("""
                 INSERT INTO store_circuit_controls (product_id, sales_enabled, purchase_enabled, max_stock)
-                VALUES (?, 1, 1, 150)
-            """, (product_id,))
+                VALUES (?, 1, 1, ?)
+            """, (product_id, OperationalThresholds.DEFAULT_MAX_STOCK))
 
             # 6. Seed Competitor Benchmarks for market price indexing
-            cursor.execute("""
-                INSERT INTO competitor_benchmarks (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
+            cursor.execute(f"""
+                INSERT INTO {DBTable.COMPETITOR_BENCHMARKS} (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (now_str, product_id, name, price, "Velvet & Vine Boutique", round(price * 1.25, 2)))
-            cursor.execute("""
-                INSERT INTO competitor_benchmarks (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
+            """, (now_str, product_id, name, price, CompetitorBrands.VELVET_AND_VINE, round(price * 1.25, 2)))
+            cursor.execute(f"""
+                INSERT INTO {DBTable.COMPETITOR_BENCHMARKS} (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (now_str, product_id, name, price, "Avenue Apparel", round(price * 1.02, 2)))
-            cursor.execute("""
-                INSERT INTO competitor_benchmarks (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
+            """, (now_str, product_id, name, price, CompetitorBrands.AVENUE_APPAREL, round(price * 1.02, 2)))
+            cursor.execute(f"""
+                INSERT INTO {DBTable.COMPETITOR_BENCHMARKS} (timestamp, product_id, product_name, your_price, competitor_name, competitor_price)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """, (now_str, product_id, name, price, "Minimalist Thread Co.", round(price * 0.78, 2)))
+            """, (now_str, product_id, name, price, CompetitorBrands.MINIMALIST_THREAD, round(price * 0.78, 2)))
 
             conn.commit()
             conn.close()
@@ -1164,12 +1251,33 @@ class DatabaseManager:
         self,
         product_id: str,
         quantity: int,
-        destination: str = "warehouse",
+        destination: str = StockLocation.CODE_WAREHOUSE,
         unit_cost: Optional[float] = None,
         notes: str = ""
     ) -> Tuple[bool, str]:
         """
-        Orders any product from the catalog in any quantity, with destination routing.
+        Executes a procurement replenishment order for catalog merchandise.
+        
+        Working:
+        1. Validates quantity and catalog SKU existence.
+        2. Calculates financial commitment (wholesale acquisition cost * quantity).
+        3. Appends transaction record to immutable `purchase_ledger`.
+        4. Distributes incoming shipment evenly across the standard size curve (S, M, L, XL).
+        5. Updates target stock matrix (Warehouse Reserve or Shop Floor) with atomic upsert.
+        
+        Why Required:
+        - Maintains supply chain financial ledger tracking and automatic inventory reordering
+          when stock drops below safety thresholds.
+          
+        Args:
+            product_id (str): SKU to replenish.
+            quantity (int): Number of total units ordered.
+            destination (str): Delivery destination ('warehouse' or 'shop').
+            unit_cost (Optional[float]): Custom wholesale price override if negotiated.
+            notes (str): Purchase order comments or vendor PO number.
+            
+        Returns:
+            Tuple[bool, str]: Success flag and confirmation message.
         """
         if quantity <= 0:
             return False, "Order quantity must be greater than zero."
@@ -1178,8 +1286,8 @@ class DatabaseManager:
             return False, f"Product ID '{product_id}' not found in catalog."
 
         destination = destination.lower().strip()
-        if destination not in ("shop", "warehouse"):
-            destination = "warehouse"
+        if destination not in (StockLocation.CODE_SHOP, StockLocation.CODE_WAREHOUSE):
+            destination = StockLocation.CODE_WAREHOUSE
 
         p_info = CATALOG[product_id]
         p_name = p_info["name"]
@@ -1192,27 +1300,27 @@ class DatabaseManager:
             cursor = conn.cursor()
 
             # Record in purchase ledger
-            cursor.execute("""
-                INSERT INTO purchase_ledger (timestamp, product_id, product_name, quantity, total_cost)
+            cursor.execute(f"""
+                INSERT INTO {DBTable.PURCHASE_LEDGER} (timestamp, product_id, product_name, quantity, total_cost)
                 VALUES (?, ?, ?, ?, ?)
             """, (now_str, product_id, p_name, quantity, total_cost))
 
             # Distribute incoming stock across S, M, L, XL
-            qty_per_size = quantity // 4
-            remainder = quantity % 4
-            sizes = ['S', 'M', 'L', 'XL']
+            qty_per_size = quantity // len(ApparelSize.ALL_SIZES)
+            remainder = quantity % len(ApparelSize.ALL_SIZES)
+            sizes = ApparelSize.ALL_SIZES
 
             for i, sz in enumerate(sizes):
                 add_qty = qty_per_size + (1 if i < remainder else 0)
-                if destination == "warehouse":
+                if destination == StockLocation.CODE_WAREHOUSE:
                     cursor.execute("""
                         INSERT INTO warehouse_stock (product_id, size_variant, stock_on_hand)
                         VALUES (?, ?, ?)
                         ON CONFLICT(product_id, size_variant) DO UPDATE SET stock_on_hand = stock_on_hand + ?
                     """, (product_id, sz, add_qty, add_qty))
                 else:
-                    cursor.execute("""
-                        INSERT INTO size_matrix_stock (product_id, size_variant, stock_on_hand)
+                    cursor.execute(f"""
+                        INSERT INTO {DBTable.SIZE_MATRIX_STOCK} (product_id, size_variant, stock_on_hand)
                         VALUES (?, ?, ?)
                         ON CONFLICT(product_id, size_variant) DO UPDATE SET stock_on_hand = stock_on_hand + ?
                     """, (product_id, sz, add_qty, add_qty))
@@ -1220,7 +1328,7 @@ class DatabaseManager:
             conn.commit()
             conn.close()
 
-            dst_name = "Warehouse Storage" if destination == "warehouse" else "Shop Floor"
+            dst_name = StockLocation.WAREHOUSE_RESERVE if destination == StockLocation.CODE_WAREHOUSE else StockLocation.SHOP_FLOOR
             msg = f"🚚 Order placed: Received {quantity}x '{p_name}' delivered to {dst_name} (Total Cost: ${total_cost:,.2f})."
             logger.info(msg)
             return True, msg
@@ -1238,9 +1346,30 @@ class DatabaseManager:
         discount_pct: float,
         target_category: str = "All Categories",
         banner_tagline: str = "",
-        launched_by: str = "Marketing Admin"
+        launched_by: str = Actors.MARKETING_LEAD
     ) -> Tuple[bool, str]:
-        """Creates and launches a new custom promotional campaign."""
+        """
+        Launches a new promotional marketing campaign with discount parameters and category targeting.
+        
+        Working:
+        1. Validates campaign name, description, and discount boundaries (0% to 70%).
+        2. Records campaign record into `campaigns` table with 'Active' status.
+        3. Allows the simulation engine and POS checkout to apply markdown rules immediately.
+        
+        Why Required:
+        - Drives promotional volume elasticity, seasonal clear-outs, and targeted category flash sales.
+        
+        Args:
+            name (str): Campaign title.
+            description (str): Editorial marketing copy.
+            discount_pct (float): Discount percentage (0.0 to 70.0).
+            target_category (str): Specific merchandise category or 'All Categories'.
+            banner_tagline (str): Catchy customer-facing promotional hook.
+            launched_by (str): Administrative creator identity.
+            
+        Returns:
+            Tuple[bool, str]: Success flag and status message.
+        """
         name = name.strip()
         description = description.strip()
         if not name or not description:
@@ -1255,9 +1384,9 @@ class DatabaseManager:
             cursor = conn.cursor()
             now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO campaigns (created_at, name, description, discount_pct, status, target_category, banner_tagline, launched_by)
-                VALUES (?, ?, ?, ?, 'Active', ?, ?, ?)
+                VALUES (?, ?, ?, ?, '{CampaignStatus.ACTIVE}', ?, ?, ?)
             """, (now_str, name, description, discount_pct, target_category, banner_tagline, launched_by))
 
             conn.commit()
@@ -1265,6 +1394,9 @@ class DatabaseManager:
             msg = f"🚀 Campaign '{name}' ({discount_pct:.0f}% Off) launched successfully!"
             logger.info(msg)
             return True, msg
+        except Exception as e:
+            logger.error(f"Error creating campaign: {e}")
+            return False, f"Failed to launch campaign: {str(e)}"
         except Exception as e:
             logger.error(f"Error creating campaign: {e}")
             return False, f"Failed to launch campaign: {str(e)}"
@@ -1511,16 +1643,44 @@ class DatabaseManager:
             logger.error(f"Error fetching agent memories: {e}")
             return []
 
-    def add_to_approval_queue(self, action_type: str, title: str, description: str, payload: Dict[str, Any], requested_by: str = "Shivi Deep Agent") -> int:
-        """Adds a high-impact action to the Human-in-the-Loop approval queue."""
+    def add_to_approval_queue(
+        self,
+        action_type: str,
+        title: str,
+        description: str,
+        payload: Dict[str, Any],
+        requested_by: str = Actors.DEEP_AGENT
+    ) -> int:
+        """
+        Enqueues a high-impact autonomous agent action into the Human-in-the-Loop (HITL) steering queue.
+        
+        Working:
+        - Serializes operational payload (e.g. bulk procurement, emergency pricing markdowns) to JSON.
+        - Appends record to `agent_approval_queue` with 'Pending' status.
+        - Emits unique queue ID for tracking and client approval callbacks.
+        
+        Why Required:
+        - Prevents catastrophic automated errors (e.g., unintended mass discounts or supplier over-orders)
+          by requiring explicit human executive sign-off before execution.
+          
+        Args:
+            action_type (str): Classification of the action (e.g. 'bulk_restock', 'heavy_markdown').
+            title (str): Short summary heading for executive notification.
+            description (str): Detailed operational rationale and financial impact.
+            payload (Dict[str, Any]): Execution arguments to be executed upon approval.
+            requested_by (str): Requesting agent or user identity.
+            
+        Returns:
+            int: Primary key ID of the queued approval request.
+        """
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             payload_str = json.dumps(payload)
-            cursor.execute("""
+            cursor.execute(f"""
                 INSERT INTO agent_approval_queue (timestamp, action_type, title, description, payload_json, status, requested_by)
-                VALUES (?, ?, ?, ?, ?, 'Pending', ?)
+                VALUES (?, ?, ?, ?, ?, '{ApprovalStatus.PENDING}', ?)
             """, (now_str, action_type, title, description, payload_str, requested_by))
             q_id = cursor.lastrowid
             conn.commit()
@@ -1531,11 +1691,23 @@ class DatabaseManager:
             return 0
 
     def get_pending_approvals(self) -> List[Dict[str, Any]]:
-        """Fetches pending steering approvals for human review."""
+        """
+        Retrieves all currently pending Human-in-the-Loop steering actions awaiting review.
+        
+        Working:
+        - Queries `agent_approval_queue` filtering where status == 'Pending'.
+        - Deserializes JSON payloads back into native dictionaries.
+        
+        Why Required:
+        - Feeds the executive dashboard approval badges and steering review modal.
+        
+        Returns:
+            List[Dict[str, Any]]: Chronologically ordered list of pending action objects.
+        """
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
-            cursor.execute("SELECT id, timestamp, action_type, title, description, payload_json, status, requested_by FROM agent_approval_queue WHERE status = 'Pending' ORDER BY id ASC")
+            cursor.execute(f"SELECT id, timestamp, action_type, title, description, payload_json, status, requested_by FROM agent_approval_queue WHERE status = '{ApprovalStatus.PENDING}' ORDER BY id ASC")
             rows = cursor.fetchall()
             conn.close()
             items = []
@@ -1560,7 +1732,23 @@ class DatabaseManager:
             return []
 
     def update_approval_status(self, approval_id: int, status: str, review_notes: str = "") -> bool:
-        """Approves or rejects a pending human-in-the-loop steering request."""
+        """
+        Records human executive decision ('Approved' or 'Rejected') on a pending steering item.
+        
+        Working:
+        - Updates the status, review timestamp, and optional feedback notes in `agent_approval_queue`.
+        
+        Why Required:
+        - Closes the feedback loop so autonomous agents know whether to proceed with execution or abort.
+        
+        Args:
+            approval_id (int): Queue item primary key ID.
+            status (str): Decision status ('Approved' or 'Rejected').
+            review_notes (str): Executive review rationale or instructions.
+            
+        Returns:
+            bool: True if record updated successfully, False otherwise.
+        """
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()

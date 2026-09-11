@@ -52,6 +52,22 @@ const App = {
         if (this.state.activeTab === 'tab-dashboard') this.loadDashboardData(false);
       }
     }, 30000);
+
+    // Prompt interactive architecture tour on first visit
+    if (!localStorage.getItem('mishika_tour_seen')) {
+      setTimeout(() => {
+        if (typeof BoutiqueTour !== 'undefined') {
+          localStorage.setItem('mishika_tour_seen', 'true');
+          BoutiqueTour.start();
+        }
+      }, 1500);
+    }
+  },
+
+  startInteractiveTour() {
+    if (typeof BoutiqueTour !== 'undefined') {
+      BoutiqueTour.start();
+    }
   },
 
   // ----------------------------------------------------

@@ -16,6 +16,12 @@ from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 
 from src.core.catalog import CATALOG
+from src.core.constants import (
+    DBTable,
+    CampaignStatus,
+    OperationalThresholds,
+    BrandDefaults,
+)
 from src.reporting.pdf_builder import generate_opening_briefing_pdf, generate_closing_audit_pdf
 from src.deep_agent.fault_tolerance import DeterministicFallbacks
 from src.deep_agent.guardrails import PIIGuardrail, DiscountSafetyGuardrail, ContentVoiceGuardrail
@@ -24,7 +30,17 @@ from src.deep_agent.delivery import EmailDeliveryService
 logger = logging.getLogger("shivi_subagents")
 
 class ReportingSubagent:
-    """Specializes in boardroom reporting, opening briefings, and closing financial audits."""
+    """
+    Specializes in boardroom reporting, opening briefings, and closing financial audits.
+    
+    Working:
+    - Generates vector-sharp boardroom PDF documents with executive financial metrics and graphs.
+    - Compiles opening briefs (active shop stock, warehouse reserves, low stock hazards, VIP birthdays).
+    - Compiles evening audits (reconciled sales revenue, net profit, realized margins, register drawer totals).
+    
+    Why Required:
+    - Delivers institutional-grade operational reporting to executive leadership and store staff daily.
+    """
     def __init__(self, db_manager):
         self.db = db_manager
 
@@ -33,9 +49,9 @@ class ReportingSubagent:
         pdf_bytes = generate_opening_briefing_pdf(self.db)
         shop_stock = self.db.get_current_stock_on_hand()
         wh_stock = self.db.get_warehouse_stock_on_hand()
-        low_stock = [pid for pid, qty in shop_stock.items() if qty <= 15]
+        low_stock = [pid for pid, qty in shop_stock.items() if qty <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD]
         campaigns = self.db.get_all_campaigns()
-        active_camp_count = len(campaigns[campaigns["status"] == "Active"]) if not campaigns.empty else 0
+        active_camp_count = len(campaigns[campaigns["status"] == CampaignStatus.ACTIVE]) if not campaigns.empty else 0
         bday_clients = self.db.get_upcoming_birthday_customers(days_ahead=7)
 
         summary = (
@@ -60,7 +76,7 @@ class ReportingSubagent:
         """Generates the evening closing audit PDF and financial reconciliation."""
         pdf_bytes = generate_closing_audit_pdf(self.db)
         today_str = datetime.now().strftime("%Y-%m-%d")
-        sales_df = self.db.fetch_logs("sales_ledger", limit=50)
+        sales_df = self.db.fetch_logs(DBTable.SALES_LEDGER, limit=50)
 
         t_rev = sales_df['total_revenue'].sum() if not sales_df.empty else 0.0
         t_profit = sales_df['gross_profit'].sum() if not sales_df.empty else 0.0

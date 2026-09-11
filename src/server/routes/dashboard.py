@@ -1,3 +1,15 @@
+"""
+src/server/routes/dashboard.py
+==============================
+FastAPI route controller for Executive BI Telemetry, Financial KPIs, and ApexCharts feeds.
+
+Why Required:
+- Delivers real-time boardroom metrics (gross profit, realized margins, sell-through rate,
+  and dual-inventory position) directly to the executive dashboard.
+- Transforms raw SQLite transactional ledgers into aggregated time-series curves, category breakdowns,
+  and broken size curve alerts without external ETL pipelines.
+"""
+
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any, List
 import pandas as pd
@@ -5,18 +17,43 @@ from datetime import datetime
 
 from src.data.db_manager import DatabaseManager
 from src.core.catalog import CATALOG, CATEGORIES
+from src.core.constants import DBTable, OperationalThresholds
 from src.analytics.competitor import CompetitorAnalyzer
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
-def get_db():
+
+def get_db() -> DatabaseManager:
+    """
+    Dependency provider for DatabaseManager.
+    
+    Returns:
+        DatabaseManager: Initialized SQLite database manager.
+    """
     return DatabaseManager()
+
 
 @router.get("/stats")
 def get_dashboard_stats() -> Dict[str, Any]:
-    """Retrieves executive headline KPIs and live inventory status."""
+    """
+    Computes real-time executive headline KPIs and live inventory positions.
+    
+    Working:
+    - Reads recent transaction records from `sales_ledger`.
+    - Computes cumulative revenue, net gross profit, and realized gross margin percentage:
+        Margin % = (Gross Profit / Total Revenue) * 100
+    - Calculates the retail Sell-Through Rate (STR):
+        STR % = Sold Units / (Sold Units + Current Shop Stock Units) * 100
+    - Tallies urgent inventory alerts (items with shop stock <= 15) and pending human approvals.
+    
+    Why Required:
+    - Provides high-level operational visibility for executive decision-making and live store health monitoring.
+    
+    Returns:
+        Dict[str, Any]: KPI metrics including revenue, profit, margin %, STR %, stock counts, and active campaigns.
+    """
     db = get_db()
-    sales_df = db.fetch_logs("sales_ledger", limit=500)
+    sales_df = db.fetch_logs(DBTable.SALES_LEDGER, limit=500)
     
     total_rev = float(sales_df["total_revenue"].sum()) if not sales_df.empty else 0.0
     total_profit = float(sales_df["gross_profit"].sum()) if not sales_df.empty else 0.0
@@ -33,7 +70,7 @@ def get_dashboard_stats() -> Dict[str, Any]:
     str_pct = round((units_sold / total_inventory * 100), 1) if total_inventory > 0 else 0.0
     
     # Count alerts
-    low_stock_count = sum(1 for qty in shop_stock.values() if qty <= 15)
+    low_stock_count = sum(1 for qty in shop_stock.values() if qty <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD)
     pending_approvals = len(db.get_pending_approvals())
     active_campaign = db.get_active_campaign()
     
@@ -54,11 +91,26 @@ def get_dashboard_stats() -> Dict[str, Any]:
         "active_campaign_discount": active_campaign["discount_pct"] if active_campaign else 0.0
     }
 
+
 @router.get("/charts")
 def get_dashboard_charts() -> Dict[str, Any]:
-    """Provides time-series, category margins, and competitor analytics for ApexCharts."""
+    """
+    Transforms transactional ledgers into formatted series for ApexCharts visualizations.
+    
+    Working:
+    1. Hourly Sales Velocity: Groups sales by hour (`HH:00`) for revenue and profit area charts.
+    2. Category Performance: Aggregates revenue and profit by merchandise category for donut/bar charts.
+    3. Top 5 Margin Styles: Identifies the 5 most profitable styles from historical sales.
+    4. Competitor Pricing Benchmarks: Evaluates pricing index ratios (Your Price / Competitor Price * 100).
+    
+    Why Required:
+    - Feeds rich, responsive charting components in the web UI for intuitive visual merchandising analytics.
+    
+    Returns:
+        Dict[str, Any]: Formatted data series for time-series, category margins, and competitive benchmarks.
+    """
     db = get_db()
-    sales_df = db.fetch_logs("sales_ledger", limit=500)
+    sales_df = db.fetch_logs(DBTable.SALES_LEDGER, limit=500)
     
     # 1. Hourly Sales Velocity Series
     hourly_data = []
@@ -133,7 +185,7 @@ def get_dashboard_charts() -> Dict[str, Any]:
         ]
 
     # 4. Competitor Pricing Benchmarks
-    comp_records = db.fetch_logs("competitor_benchmarks", limit=20)
+    comp_records = db.fetch_logs(DBTable.COMPETITOR_BENCHMARKS, limit=20)
     benchmarks = []
     if not comp_records.empty:
         for _, row in comp_records.head(6).iterrows():
@@ -158,9 +210,24 @@ def get_dashboard_charts() -> Dict[str, Any]:
         "competitor_benchmarks": benchmarks
     }
 
+
 @router.get("/alerts")
 def get_dashboard_alerts() -> Dict[str, Any]:
-    """Retrieves operational safety alerts, stockout warnings, and broken curves."""
+    """
+    Identifies broken apparel size curves and critically low inventory hazards.
+    
+    Working:
+    - Scans `size_matrix_stock` for missing core sizes (S, M, L stock <= 2 units).
+    - Scans total shop floor stock per style for quantities <= 15 units.
+    - Cross-references warehouse backroom reserves to indicate whether an internal transfer can fix the hazard.
+    
+    Why Required:
+    - Broken curves damage retail conversion rates because walk-in patrons cannot find standard sizes,
+      requiring immediate alerting for store associates.
+      
+    Returns:
+        Dict[str, Any]: Broken size curves, critical low stock styles, and total active alert count.
+    """
     db = get_db()
     shop_stock = db.get_current_stock_on_hand()
     wh_stock = db.get_warehouse_stock_on_hand()
@@ -191,7 +258,7 @@ def get_dashboard_alerts() -> Dict[str, Any]:
             "warehouse_reserve": wh_stock.get(pid, 0)
         }
         for pid, qty in shop_stock.items()
-        if qty <= 15
+        if qty <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD
     ]
 
     return {

@@ -1,5 +1,17 @@
+"""
+src/server/routes/agent.py
+==========================
+FastAPI route controller for Shivi Autonomous AI Deep Boutique Agent.
+
+Why Required:
+- Orchestrates multi-step autonomous boutique operations: morning briefings, evening closing audits,
+  curated fashion trend newsletters, promotional broadcasts, stockout watchdog alerts, and VIP birthday concierge.
+- Enforces Human-in-the-Loop (HITL) steering approval queues for high-impact actions.
+- Governs enterprise guardrails (PII redaction and promotional discount clamping) and live SMTP email delivery.
+"""
+
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -7,64 +19,148 @@ from src.data.db_manager import DatabaseManager
 from src.deep_agent.orchestrator import ShiviDeepAgent
 from src.deep_agent.delivery import EmailDeliveryService, WhatsAppDeliveryService
 from src.deep_agent.guardrails import PIIGuardrail, DiscountSafetyGuardrail
+from src.core.constants import (
+    AgentActionType,
+    ApprovalStatus,
+    Actors,
+    BrandDefaults,
+    OperationalThresholds,
+)
 
 router = APIRouter(prefix="/api/agent", tags=["Shivi Deep Agent"])
 
 # Singleton agent instance for server session
 _agent_instance: Optional[ShiviDeepAgent] = None
 
+
 def get_agent() -> ShiviDeepAgent:
+    """
+    Retrieves or initializes the server session's singleton Shivi Deep Agent.
+    
+    Why Required:
+    Preserves in-memory conversational context, active hierarchical plans, and subagent state
+    across sequential API invocations.
+    
+    Returns:
+        ShiviDeepAgent: Initialized orchestrator instance.
+    """
     global _agent_instance
     if _agent_instance is None:
         db = DatabaseManager()
         _agent_instance = ShiviDeepAgent(db_manager=db)
     return _agent_instance
 
+
 class AgentActionRequest(BaseModel):
-    action: str # "morning_opening", "evening_closing", "fashion_news", "campaign_launch", "stock_watchdog", "birthday_concierge"
-    dry_run: bool = False
-    topic_query: Optional[str] = None
-    customer_id: Optional[int] = None
+    """
+    Request model for triggering specialized autonomous agent routines.
+    
+    Why Required:
+    Validates the routine identifier, optional topic search query, patron ID, and dry-run flag.
+    """
+    action: str = Field(
+        ...,
+        description="Routine key: morning_opening, evening_closing, fashion_news, campaign_launch, stock_watchdog, birthday_concierge."
+    )
+    dry_run: bool = Field(False, description="When true, compiles messages/audits without dispatching real emails.")
+    topic_query: Optional[str] = Field(None, description="Optional fashion trend topic filter for news routines.")
+    customer_id: Optional[int] = Field(None, description="Optional target customer ID for personalized dispatches.")
+
 
 class ApprovalActionRequest(BaseModel):
-    decision: str # "Approve" or "Reject"
-    reviewed_by: str = "Executive Admin"
+    """
+    Request model for human executive review of queued high-impact actions.
+    
+    Why Required:
+    Enforces explicit executive decision ('Approve' or 'Reject') and records reviewer identity.
+    """
+    decision: str = Field(..., description="Executive decision: 'Approve' or 'Reject'.")
+    reviewed_by: str = Field(Actors.EXECUTIVE_ADMIN, description="Reviewer name or administrative role.")
+
 
 class SendEmailRequest(BaseModel):
-    to_email: Optional[str] = None
-    subject: Optional[str] = None
-    html_body: Optional[str] = None
-    plain_body: Optional[str] = None
-    customer_id: Optional[int] = None
-    customer_name: Optional[str] = None
-    batch: bool = False
-    messages: Optional[List[Dict[str, Any]]] = None
+    """
+    Request model for outbound email delivery via SMTP.
+    
+    Why Required:
+    Supports single concierge dispatch or bulk batch delivery of personalized newsletters.
+    """
+    to_email: Optional[str] = Field(None, description="Recipient email address for single dispatch.")
+    subject: Optional[str] = Field(None, description="Email subject line.")
+    html_body: Optional[str] = Field(None, description="Rich HTML email content.")
+    plain_body: Optional[str] = Field(None, description="Optional plaintext fallback.")
+    customer_id: Optional[int] = Field(None, description="Target customer ID for audit ledger tracking.")
+    customer_name: Optional[str] = Field(None, description="Patron name.")
+    batch: bool = Field(False, description="True if dispatching a batch list of messages.")
+    messages: Optional[List[Dict[str, Any]]] = Field(None, description="List of pre-curated message objects for batch dispatch.")
+
 
 class EmailConfigRequest(BaseModel):
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_pass: str = ""
-    smtp_from: Optional[str] = None
-    from_name: str = "Mishika Fashion Boutique Concierge"
-    admin_email: str = ""
-    auto_send_admin_audits: bool = True
-    auto_send_customer_emails: bool = True
+    """
+    Request model for configuring SMTP server credentials and auto-send policies.
+    
+    Why Required:
+    Ensures safe loading and persistence of SMTP host, port, credentials, and notification settings.
+    """
+    smtp_host: str = Field("smtp.gmail.com", description="SMTP server hostname.")
+    smtp_port: int = Field(587, description="SMTP port (typically 587 for TLS).")
+    smtp_user: str = Field("", description="SMTP account username or Gmail address.")
+    smtp_pass: str = Field("", description="SMTP password or 16-character Google App Password.")
+    smtp_from: Optional[str] = Field(None, description="Sender email address.")
+    from_name: str = Field("Mishika Fashion Boutique Concierge", description="Display name for outgoing emails.")
+    admin_email: str = Field("", description="Store manager email for receiving boardroom audit PDFs.")
+    auto_send_admin_audits: bool = Field(True, description="Automatically email morning/evening PDF audits to admin.")
+    auto_send_customer_emails: bool = Field(True, description="Automatically dispatch customer newsletters and perks.")
+
 
 class TestEmailRequest(BaseModel):
-    to_email: str
-    config: Optional[Dict[str, Any]] = None
+    """
+    Request model for validating SMTP connectivity via handshake test.
+    
+    Why Required:
+    Provides immediate feedback on credentials before saving or triggering batch campaigns.
+    """
+    to_email: str = Field(..., description="Test recipient email address.")
+    config: Optional[Dict[str, Any]] = Field(None, description="Optional unsaved config dictionary to test.")
+
 
 class PIIRedactRequest(BaseModel):
-    text: str
+    """
+    Request model for PII redaction preview.
+    
+    Why Required:
+    Tests sanitization of customer emails and phone numbers before logging or prompt transmission.
+    """
+    text: str = Field(..., description="Raw text containing potential sensitive PII.")
+
 
 class ValidateDiscountRequest(BaseModel):
-    discount_pct: float
-    is_superadmin: bool = False
+    """
+    Request model for testing promotional markdown safety guardrails.
+    
+    Why Required:
+    Tests the 50.0% discount clamping logic without modifying database records.
+    """
+    discount_pct: float = Field(..., description="Requested discount percentage.")
+    is_superadmin: bool = Field(False, description="Whether super-admin override applies.")
+
 
 @router.get("/status")
 def get_agent_status() -> Dict[str, Any]:
-    """Retrieves current autonomous agent status, active goal, subagents, and memory."""
+    """
+    Retrieves the current operational status of Shivi Deep Agent.
+    
+    Working:
+    - Resolves active hierarchical goal plan.
+    - Counts pending human approval items, memory entries, skills, and tools.
+    - Inspects SMTP email configuration status.
+    
+    Why Required:
+    - Feeds the AI Agent command center view with live telemetry and system health.
+    
+    Returns:
+        Dict[str, Any]: Agent status payload with subagents, plan, and guardrail metrics.
+    """
     agent = get_agent()
     plan = agent.get_or_create_default_plan()
     plan_dict = plan.to_dict() if plan else None
@@ -76,7 +172,7 @@ def get_agent_status() -> Dict[str, Any]:
         "success": True,
         "agent_name": "Shivi",
         "title": "Autonomous AI Deep Boutique Agent",
-        "brand": "Mishika Fashion Luxury Boutique",
+        "brand": BrandDefaults.BRAND_NAME,
         "current_plan": plan_dict,
         "subagents": [
             {"name": "ReportingSubagent", "role": "Opening/Closing Boardroom Audits & PDFs"},
@@ -93,30 +189,49 @@ def get_agent_status() -> Dict[str, Any]:
         "email_user": email_conf.get("smtp_user", "")
     }
 
+
 @router.post("/run-action")
 def run_agent_action(req: AgentActionRequest) -> Dict[str, Any]:
-    """Executes a specialized autonomous Deep Agent routine."""
+    """
+    Executes a specialized autonomous Deep Agent routine with planning and memory retention.
+    
+    Working:
+    - Normalizes action key and routes to corresponding subagent routine:
+        - `morning_opening`: Generates opening briefing PDF and stock alerts.
+        - `evening_closing`: Generates closing financial audit PDF and drawer reconciliation.
+        - `fashion_news`: Curates live runway trends and drafts personalized client newsletters.
+        - `campaign_launch`: Prepares promotional broadcasts for active campaigns.
+        - `stock_watchdog`: Identifies replenishment needs and back-in-stock notifications.
+        - `birthday_concierge`: Prepares bespoke anniversary and birthday perks.
+    - Serializes PDF bytes safely and records step execution in active hierarchical plan.
+    
+    Why Required:
+    - Core entry point for triggering Shivi Deep Agent's autonomous executive capabilities.
+    
+    Args:
+        req (AgentActionRequest): Target routine and execution parameters.
+        
+    Returns:
+        Dict[str, Any]: Result payload, updated plan state, and execution summary.
+    """
     agent = get_agent()
     act = req.action.lower().replace("-", "_")
 
-    if act in ["opening_briefing", "opening", "morning_opening"]:
+    if act in ["opening_briefing", "opening", AgentActionType.MORNING_OPENING]:
         res = agent.run_opening_routine()
-    elif act in ["closing_audit", "closing", "evening_closing"]:
+    elif act in ["closing_audit", "closing", AgentActionType.EVENING_CLOSING, "eod_consolidation", "eod", "full_audit"]:
         res = agent.run_closing_routine()
-    elif act in ["eod_consolidation", "eod", "full_audit"]:
-        res = agent.run_closing_routine()
-    elif act in ["fashion_news", "trend_news", "news"]:
+    elif act in [AgentActionType.FASHION_NEWS, "trend_news", "news"]:
         res = agent.dispatch_trending_fashion_news(customer_id=req.customer_id, dry_run=req.dry_run)
-    elif act in ["campaign_launch", "campaign"]:
+    elif act in [AgentActionType.CAMPAIGN_LAUNCH, "campaign"]:
         res = agent.broadcast_campaign_launch(dry_run=req.dry_run)
-    elif act in ["stock_watchdog", "restock", "back_in_stock", "restock_alert"]:
+    elif act in [AgentActionType.STOCK_WATCHDOG, "restock", "back_in_stock", "restock_alert"]:
         res = agent.check_and_notify_back_in_stock(dry_run=req.dry_run)
-    elif act in ["birthday_concierge", "birthday", "birthday_perks"]:
+    elif act in [AgentActionType.BIRTHDAY_CONCIERGE, "birthday", "birthday_perks"]:
         res = agent.dispatch_birthday_perks(days_ahead=14, dry_run=req.dry_run)
     else:
         raise HTTPException(status_code=400, detail=f"Unknown agent action: '{req.action}'.")
 
-    # Serialize PDF bytes if present for clean JSON response
     response_payload = dict(res)
     if "pdf_bytes" in response_payload:
         response_payload["pdf_available"] = bool(response_payload["pdf_bytes"])
@@ -131,9 +246,27 @@ def run_agent_action(req: AgentActionRequest) -> Dict[str, Any]:
         "result": response_payload
     }
 
+
 @router.get("/news-preview")
-def get_news_preview(topic_query: Optional[str] = None, randomize: bool = False, customer_id: Optional[int] = None) -> Dict[str, Any]:
-    """Curates fashion trends and generates draft newsletters/WhatsApp messages."""
+def get_news_preview(
+    topic_query: Optional[str] = None,
+    randomize: bool = False,
+    customer_id: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Curates trending fashion news from live internet feeds with guaranteed fallback.
+    
+    Working:
+    - Queries internet RSS feeds for runway and luxury couture topics.
+    - If offline or unreachable, seamlessly falls back to curated luxury default news.
+    - Generates personalized email HTML and WhatsApp 1-click text templates for patrons.
+    
+    Why Required:
+    - Allows boutique staff to review and edit client news broadcasts prior to sending.
+    
+    Returns:
+        Dict[str, Any]: Curated messages, live internet indicator flag, and source citation.
+    """
     agent = get_agent()
     messages = agent.trend_subagent.curate_and_draft_fashion_news(
         query=topic_query,
@@ -151,13 +284,27 @@ def get_news_preview(topic_query: Optional[str] = None, randomize: bool = False,
         "messages": messages
     }
 
+
 @router.post("/send-email")
 def send_agent_email(req: SendEmailRequest) -> Dict[str, Any]:
-    """Sends single or batch emails via configured SMTP gateway and logs in SQLite."""
+    """
+    Dispatches single or batch emails via SMTP and logs delivery into SQLite.
+    
+    Working:
+    - Verifies SMTP credentials.
+    - Executes TLS handshake and delivers messages.
+    - Logs dispatches in `agent_communications` ledger.
+    
+    Why Required:
+    - Enables automated multi-client marketing broadcasts and concierge communications.
+    """
     agent = get_agent()
     conf = EmailDeliveryService.load_email_config()
     if not conf.get("is_configured"):
-        raise HTTPException(status_code=400, detail="Gmail SMTP not configured. Please enter your Gmail address and 16-character App Password in Settings.")
+        raise HTTPException(
+            status_code=400,
+            detail="Gmail SMTP not configured. Please enter your Gmail address and 16-character App Password in Settings."
+        )
 
     if req.batch:
         items = req.messages or []
@@ -179,7 +326,7 @@ def send_agent_email(req: SendEmailRequest) -> Dict[str, Any]:
                 agent.db.save_agent_communication({
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "customer_id": m.get("customer_id"),
-                    "customer_name": m.get("customer_name", "VIP Patron"),
+                    "customer_name": m.get("customer_name", BrandDefaults.FALLBACK_CLIENT_NAME),
                     "channel": "Email",
                     "message_type": "Marketing",
                     "subject": sub,
@@ -199,7 +346,7 @@ def send_agent_email(req: SendEmailRequest) -> Dict[str, Any]:
         if not req.to_email or not req.html_body:
             raise HTTPException(status_code=400, detail="to_email and html_body are required for single email dispatch.")
 
-        sub = req.subject or "Mishika Fashion Boutique Alert"
+        sub = req.subject or f"{BrandDefaults.BRAND_NAME} Alert"
         ok, err_msg = EmailDeliveryService.send_smtp_email(
             to_email=req.to_email,
             subject=sub,
@@ -212,7 +359,7 @@ def send_agent_email(req: SendEmailRequest) -> Dict[str, Any]:
         agent.db.save_agent_communication({
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "customer_id": req.customer_id,
-            "customer_name": req.customer_name or "VIP Patron",
+            "customer_name": req.customer_name or BrandDefaults.FALLBACK_CLIENT_NAME,
             "channel": "Email",
             "message_type": "Direct Dispatch",
             "subject": sub,
@@ -225,11 +372,13 @@ def send_agent_email(req: SendEmailRequest) -> Dict[str, Any]:
             "message": f"Email successfully delivered to {req.to_email} via Gmail SMTP!"
         }
 
+
 @router.get("/email-config")
 def get_email_config() -> Dict[str, Any]:
-    """Retrieves current SMTP email configuration."""
+    """
+    Retrieves current SMTP email configuration with masked passwords for safe UI display.
+    """
     conf = EmailDeliveryService.load_email_config()
-    # Mask password for secure UI display
     masked_conf = dict(conf)
     if masked_conf.get("smtp_pass"):
         pwd = masked_conf["smtp_pass"]
@@ -239,9 +388,12 @@ def get_email_config() -> Dict[str, Any]:
         "config": masked_conf
     }
 
+
 @router.post("/email-config")
 def save_email_config(req: EmailConfigRequest) -> Dict[str, Any]:
-    """Persists SMTP email configuration to storage and .env."""
+    """
+    Persists SMTP email configuration to disk storage and environment.
+    """
     new_conf = {
         "smtp_host": req.smtp_host.strip(),
         "smtp_port": int(req.smtp_port),
@@ -261,9 +413,12 @@ def save_email_config(req: EmailConfigRequest) -> Dict[str, Any]:
         "message": msg
     }
 
+
 @router.post("/test-email")
 def test_email_connection(req: TestEmailRequest) -> Dict[str, Any]:
-    """Tests SMTP connection and sends live verification email."""
+    """
+    Executes an active SMTP handshake test and sends a verification email.
+    """
     conf = req.config or EmailDeliveryService.load_email_config()
     if not conf.get("smtp_user") or not conf.get("smtp_pass"):
         raise HTTPException(status_code=400, detail="Gmail address and App Password must be provided.")
@@ -278,9 +433,12 @@ def test_email_connection(req: TestEmailRequest) -> Dict[str, Any]:
         "message": msg
     }
 
+
 @router.post("/guardrails/redact-pii")
 def redact_pii_preview(req: PIIRedactRequest) -> Dict[str, Any]:
-    """Applies real-time PII redaction to text."""
+    """
+    Scans arbitrary text and redacts sensitive Personally Identifiable Information (emails and phones).
+    """
     redacted = PIIGuardrail.redact_pii(req.text)
     return {
         "success": True,
@@ -288,9 +446,12 @@ def redact_pii_preview(req: PIIRedactRequest) -> Dict[str, Any]:
         "sanitized_text": redacted
     }
 
+
 @router.post("/guardrails/validate-discount")
 def validate_discount_preview(req: ValidateDiscountRequest) -> Dict[str, Any]:
-    """Validates promotional discount cap safety."""
+    """
+    Evaluates promotional markdown percentage against enterprise 50.0% safety boundary.
+    """
     is_safe, eff_d, msg = DiscountSafetyGuardrail.validate_discount(req.discount_pct, is_superadmin=req.is_superadmin)
     return {
         "success": True,
@@ -300,9 +461,12 @@ def validate_discount_preview(req: ValidateDiscountRequest) -> Dict[str, Any]:
         "message": msg
     }
 
+
 @router.get("/approvals")
 def get_pending_approvals() -> Dict[str, Any]:
-    """Retrieves pending Human-in-the-Loop approval requests."""
+    """
+    Retrieves all pending Human-in-the-Loop steering actions awaiting review.
+    """
     agent = get_agent()
     queue = agent.steering.get_pending_queue()
     return {
@@ -311,13 +475,17 @@ def get_pending_approvals() -> Dict[str, Any]:
         "approvals": queue
     }
 
+
 @router.post("/approvals/{approval_id}/action")
 def process_approval(approval_id: int, req: ApprovalActionRequest) -> Dict[str, Any]:
-    """Authorizes or rejects a pending high-impact action."""
+    """
+    Approves or rejects a pending human-in-the-loop steering request.
+    """
     agent = get_agent()
-    if req.decision.lower() == "approve":
+    dec = req.decision.lower().strip()
+    if dec == "approve":
         ok, msg = agent.steering.approve_action(approval_id, reviewed_by=req.reviewed_by)
-    elif req.decision.lower() == "reject":
+    elif dec == "reject":
         ok, msg = agent.steering.reject_action(approval_id, reviewed_by=req.reviewed_by)
     else:
         raise HTTPException(status_code=400, detail="Decision must be 'Approve' or 'Reject'.")
@@ -332,9 +500,12 @@ def process_approval(approval_id: int, req: ApprovalActionRequest) -> Dict[str, 
         "decision": req.decision
     }
 
+
 @router.get("/communications")
 def list_communications(limit: int = 50) -> Dict[str, Any]:
-    """Returns outbound email and WhatsApp communication logs."""
+    """
+    Returns audit logs of outbound emails and WhatsApp dispatches executed by Shivi Deep Agent.
+    """
     agent = get_agent()
     df = agent.db.get_agent_communications(limit=limit)
     records = df.to_dict("records") if not df.empty else []

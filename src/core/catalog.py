@@ -37,14 +37,21 @@ CATALOG = {
     "P020": {"name": "Heavyweight Cotton Hoodie", "cost": 18.0, "price": 55.0, "color": "#16a085", "category": "Tops"}
 }
 
-def generate_initial_inventory():
+def generate_initial_inventory() -> dict:
     """
-    Initializes stock levels for 20 products.
-    15 items are seeded with healthy stock (35-60 units).
-    5 specific items (P016-P020) are seeded as out-of-stock (0 units).
+    Initializes realistic initial inventory distribution across the 20 boutique styles.
+    
+    Working:
+    - Seeds 15 core styles with healthy, randomized inventory buffers (35-60 units).
+    - Deliberately seeds 5 designated styles (P016-P020) at 0 stock.
+    
+    Why Required:
+    - Provides immediate real-world operational realism for the executive BI dashboard,
+      simulating urgent procurement reorder scenarios, stockout alerts, and back-in-stock
+      customer notification workflows out-of-the-box.
     
     Returns:
-        dict: A dictionary mapping product IDs to their initial stock quantities.
+        dict: Mapping of product ID (e.g., 'P001') to integer stock on hand.
     """
     try:
         inventory_state = {}
@@ -60,9 +67,36 @@ def generate_initial_inventory():
         return {pid: 0 for pid in CATALOG}
 
 
-def register_product(pid: str, name: str, cost: float, price: float, color: str = "#2c3e50", category: str = "Apparel") -> dict:
+def register_product(
+    pid: str,
+    name: str,
+    cost: float,
+    price: float,
+    color: str = "#2c3e50",
+    category: str = "Apparel"
+) -> dict:
     """
-    Registers a new product into the active CATALOG mapping in-memory.
+    Dynamically registers a newly created style into the in-memory product catalog.
+    
+    Working:
+    - Validates numeric pricing and builds the canonical dictionary representation.
+    - Updates the global CATALOG map so new styles are immediately recognized by
+      the simulation engine, copilot context, and analytical models without server restarts.
+    
+    Why Required:
+    - Allows boutique merchants to launch custom capsule collections and seasonal styles
+      directly through the web portal or Shivi Deep Agent procurement routines.
+    
+    Args:
+        pid (str): Unique alphanumeric SKU / identifier (e.g. 'P021').
+        name (str): Luxury product title.
+        cost (float): Wholesale procurement acquisition cost basis.
+        price (float): Recommended retail price (RRP).
+        color (str): Hex color code for UI visualization chips.
+        category (str): Merchandise classification (e.g. 'Dresses', 'Knitwear').
+        
+    Returns:
+        dict: The newly created product specification record.
     """
     product_entry = {
         "name": name,

@@ -11,6 +11,7 @@ Automated test suite verifying the extended FastAPI endpoints for Shivi Deep Age
 """
 
 import unittest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from src.server.app import app
 
@@ -95,7 +96,8 @@ class ShiviAgentRoutesTestCase(unittest.TestCase):
         self.assertIn("smtp_host", cfg)
         self.assertIn("smtp_port", cfg)
 
-    def test_06_operational_dispatchers(self):
+    @patch("src.deep_agent.delivery.EmailDeliveryService.send_smtp_email", return_value=(True, "Mocked for testing"))
+    def test_06_operational_dispatchers(self, mock_send_email):
         """Verify running specialized actions via /api/agent/run-action."""
         # 1. Morning Opening
         resp_open = self.client.post("/api/agent/run-action", json={"action": "morning_opening"})

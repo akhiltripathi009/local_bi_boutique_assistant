@@ -1,4 +1,4 @@
-﻿"""
+"""
 src/core/config.py
 ==================
 Centralized system configuration, filesystem paths, and environment settings.
@@ -35,11 +35,13 @@ else:
 # Log file path
 LOG_FILE = str(LOGS_DIR / "app.log")
 
-# Application domain constants
-APP_TITLE = "Local BI Boutique Assistant"
+# Application domain constants (bridged with centralized constants module)
+from src.core.constants import BrandDefaults, OperationalThresholds
+
+APP_TITLE = BrandDefaults.APP_TITLE
 APP_VERSION = "2.5.0"
-DEFAULT_CURRENCY = "$"
-CRITICAL_STOCK_THRESHOLD = 15
+DEFAULT_CURRENCY = BrandDefaults.CURRENCY_SYMBOL
+CRITICAL_STOCK_THRESHOLD = OperationalThresholds.CRITICAL_STOCK_THRESHOLD
 
 # Ollama Local LLM defaults
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")

@@ -11,11 +11,24 @@ import json
 import logging
 from typing import Dict, Any, List, Optional, Tuple, Callable
 
+from src.core.constants import ApprovalStatus, Actors
+
 logger = logging.getLogger("shivi_steering")
 
 class SteeringManager:
     """
-    Manages human-in-the-loop approval workflows for Shivi Deep Agent.
+    Manages human-in-the-loop (HITL) approval workflows and safety gating for Shivi Deep Agent.
+    
+    Working:
+    - Evaluates planned actions against strict impact thresholds (mass messaging, large procurement orders,
+      high discount markdowns).
+    - Automatically enqueues high-impact actions into the SQLite approval queue rather than executing immediately.
+    - Executes registered callback handlers upon verified executive approval.
+    
+    Why Required:
+    - Provides enterprise AI governance: autonomous agents can act freely on low-risk operational tasks
+      (inventory audits, birthday lookups) while requiring human executive oversight on capital-allocating
+      or brand-impacting actions.
     """
     # Thresholds defining high-impact operations requiring explicit review
     MASS_DISPATCH_THRESHOLD = 5         # Messages to >= 5 customers
@@ -65,7 +78,7 @@ class SteeringManager:
             title=title,
             description=description,
             payload=payload,
-            requested_by="Shivi Deep Agent"
+            requested_by=Actors.DEEP_AGENT
         )
         logger.info(f"Queued action #{q_id} for Human-in-the-Loop review: [{action_type}] {title}")
         return q_id
@@ -96,12 +109,12 @@ class SteeringManager:
                 logger.error(f"Failed to execute approved action #{approval_id}: {e}")
                 exec_msg = f" Action execution encountered error: {str(e)}"
 
-        self.db.update_approval_status(approval_id, "Approved", review_notes + exec_msg)
+        self.db.update_approval_status(approval_id, ApprovalStatus.APPROVED, review_notes + exec_msg)
         return True, f"Action #{approval_id} successfully approved.{exec_msg}"
 
     def reject_action(self, approval_id: int, review_notes: str = "") -> Tuple[bool, str]:
         """Rejects a queued action with optional reason."""
-        success = self.db.update_approval_status(approval_id, "Rejected", review_notes)
+        success = self.db.update_approval_status(approval_id, ApprovalStatus.REJECTED, review_notes)
         if success:
             return True, f"Action #{approval_id} rejected by administrator."
         return False, f"Failed to reject action #{approval_id}."

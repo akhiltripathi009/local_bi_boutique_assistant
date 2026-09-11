@@ -11,12 +11,22 @@ import re
 import logging
 from typing import Tuple, Dict, Any, List
 
+from src.core.constants import OperationalThresholds
+
 logger = logging.getLogger("shivi_guardrails")
 
 class PIIGuardrail:
     """
     Detects and redacts sensitive Personally Identifiable Information (PII)
     from agent logs, prompt contexts, and public telemetry.
+    
+    Working:
+    - Scans arbitrary text using precompiled regex patterns for email addresses and phone numbers.
+    - Masks emails (e.g. 'e***a@domain.com') and phone numbers (e.g. '+1-***-***-0101').
+    
+    Why Required:
+    - Protects high-net-worth boutique patrons' privacy by preventing PII leaks
+      into public logs, third-party LLM providers, or unauthorized telemetry.
     """
     EMAIL_REGEX = re.compile(r'([a-zA-Z0-9_.+-]+)@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)')
     PHONE_REGEX = re.compile(r'(\+?\d{1,3}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{4}')
@@ -68,8 +78,16 @@ class DiscountSafetyGuardrail:
     """
     Prevents unauthorized or catastrophic margin dilution by capping promotional markdowns.
     Hard upper bound is 50.0% unless explicit super-admin override is logged.
+    
+    Working:
+    - Validates incoming discount values against the enterprise threshold (50.0%).
+    - Automatically clamps excessive discounts to 50.0% and logs a security guardrail violation.
+    
+    Why Required:
+    - Eliminates the risk of rogue AI discounts, hallucinated promo codes, or typos
+      destroying luxury margin solvency.
     """
-    MAX_PERMISSIBLE_DISCOUNT = 50.0
+    MAX_PERMISSIBLE_DISCOUNT = OperationalThresholds.MAX_PERMISSIBLE_DISCOUNT
 
     @classmethod
     def validate_discount(cls, discount_pct: float, is_superadmin: bool = False) -> Tuple[bool, float, str]:
@@ -101,6 +119,14 @@ class ContentVoiceGuardrail:
     """
     Validates outbound customer messages for luxury boutique voice,
     proper greetings, politeness, and absence of prohibited phrases.
+    
+    Working:
+    - Scans message content for prohibited unrefined words ('cheap', 'fake', 'trash', etc.).
+    - Ensures minimum message length and luxury editorial standards.
+    
+    Why Required:
+    - Protects the luxury house's reputation by preventing unrefined or derogatory terminology
+      in customer-facing marketing or concierge dispatches.
     """
     PROHIBITED_WORDS = {"cheap", "ugly", "fake", "knockoff", "garbage", "trash", "desperate", "fire sale"}
 

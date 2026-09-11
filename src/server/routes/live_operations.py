@@ -1,9 +1,12 @@
 """
 src/server/routes/live_operations.py
 ====================================
-FastAPI router for Segment 2: Live Store & Shop Operations Pipeline.
-Provides real-time discrete event simulation control, transactional streaming,
-inventory synchronization, and SSE telemetry feeds for the Atelier Web SPA.
+FastAPI route controller for Segment 2: Live Store & Shop Operations Pipeline.
+
+Why Required:
+- Powers the real-time interactive simulation experience for the Atelier Web SPA.
+- Manages thread-safe background discrete event simulation, manual single-tick execution,
+  and Server-Sent Events (SSE) streaming without blocking HTTP request workers.
 """
 
 import time
@@ -20,17 +23,53 @@ from pydantic import BaseModel, Field
 from src.data.db_manager import DatabaseManager
 from src.simulation.engine import SimulationEngine
 from src.core.catalog import CATALOG, generate_initial_inventory
+from src.core.constants import (
+    SimEventType,
+    DBTable,
+    OperationalThresholds,
+    BrandDefaults,
+    ApparelSize,
+)
 
 logger = logging.getLogger("live_operations_router")
 
 router = APIRouter(prefix="/api/live-ops", tags=["Live Shop Operations"])
 
+
 class LiveSettingsRequest(BaseModel):
-    promo_discount: Optional[int] = Field(None, ge=0, le=50, description="Promotional flash markdown percentage (0-50%)")
-    tick_speed: Optional[float] = Field(None, ge=0.1, le=3.0, description="Simulation tick frequency in seconds")
+    """
+    Request model for configuring live simulation parameters.
+    
+    Why Required:
+    Validates promotional discount caps and speed limits to protect simulation stability.
+    """
+    promo_discount: Optional[int] = Field(
+        None,
+        ge=0,
+        le=int(OperationalThresholds.MAX_PERMISSIBLE_DISCOUNT),
+        description="Promotional flash markdown percentage (0-50%)."
+    )
+    tick_speed: Optional[float] = Field(
+        None,
+        ge=0.1,
+        le=3.0,
+        description="Simulation tick frequency in seconds."
+    )
+
 
 class LiveOpsManager:
-    """Thread-safe singleton managing the live store operations background simulation."""
+    """
+    Thread-safe singleton managing the live store operations background simulation.
+    
+    Working:
+    - Maintains a background worker thread (`_simulation_worker`) running discrete simulation ticks.
+    - Synchronizes in-memory stock with SQLite persistence under re-entrant lock protection.
+    - Buffers the latest transactional event, frame counter, and stock chart telemetry for SSE streaming.
+    
+    Why Required:
+    - Decouples long-running discrete simulation execution from ASGI event loops,
+      allowing users to start, pause, inspect, and step transactions safely.
+    """
     _instance = None
     _lock = threading.Lock()
 
@@ -42,6 +81,7 @@ class LiveOpsManager:
             return cls._instance
 
     def _init_state(self):
+        """Initializes manager state, locks, and baseline inventory."""
         self.db = DatabaseManager()
         self.sim = SimulationEngine(CATALOG, self.db)
         self.running = False
@@ -65,7 +105,7 @@ class LiveOpsManager:
 
         self.latest_event = {
             "event_text": "Live operations pipeline in standby mode.",
-            "event_type": "Idle",
+            "event_type": SimEventType.IDLE,
             "product_id": None,
             "product_name": None,
             "unit_price": 0.0,
@@ -73,10 +113,19 @@ class LiveOpsManager:
         }
 
     def get_status(self) -> Dict[str, Any]:
-        """Returns instantaneous snapshot of the simulation pipeline."""
+        """
+        Returns instantaneous snapshot of the simulation pipeline.
+        
+        Working:
+        - Acquires state lock to gather frame counter, running state, inventory metrics,
+          and latest event context.
+          
+        Why Required:
+        - Provides polling and SSE endpoints with consistent state snapshots.
+        """
         with self._state_lock:
             total_revenue = self.db.get_total_historical_revenue()
-            low_stock_count = sum(1 for v in self.live_inventory.values() if v <= 15)
+            low_stock_count = sum(1 for v in self.live_inventory.values() if v <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD)
             first_pid = next(iter(CATALOG.keys())) if CATALOG else None
             active_pid = self.latest_event.get("product_id") or first_pid
 
@@ -104,7 +153,16 @@ class LiveOpsManager:
             }
 
     def execute_tick(self) -> Dict[str, Any]:
-        """Executes a single discrete simulation tick."""
+        """
+        Executes a single discrete simulation tick under thread lock.
+        
+        Working:
+        - Advances frame counter, invokes `SimulationEngine.process_tick()`,
+          buffers the latest event, and fetches updated stock snapshots.
+          
+        Why Required:
+        - Enables manual stepping or automated worker stepping.
+        """
         with self._state_lock:
             self.frame_counter += 1
             event_text, event_type, event_pid = self.sim.process_tick(self.promo_discount, self.live_inventory)
@@ -126,7 +184,7 @@ class LiveOpsManager:
             max_stock = circuit_controls.get(event_pid, {}).get("max_stock", 100) if event_pid else 100
 
             total_revenue = self.db.get_total_historical_revenue()
-            low_stock_count = sum(1 for v in self.live_inventory.values() if v <= 15)
+            low_stock_count = sum(1 for v in self.live_inventory.values() if v <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD)
 
             return {
                 "success": True,
@@ -140,7 +198,7 @@ class LiveOpsManager:
             }
 
     def _simulation_worker(self):
-        """Background thread executing ticks while active."""
+        """Background thread executing continuous ticks while active."""
         logger.info("Live Operations background simulation worker started.")
         while not self._stop_event.is_set():
             try:
@@ -151,7 +209,7 @@ class LiveOpsManager:
         logger.info("Live Operations background simulation worker paused.")
 
     def start(self):
-        """Starts background simulation loop."""
+        """Starts background continuous simulation thread."""
         with self._state_lock:
             if self.running:
                 return
@@ -161,26 +219,23 @@ class LiveOpsManager:
             self._thread.start()
 
     def pause(self):
-        """Pauses background simulation loop."""
+        """Pauses background simulation thread."""
         with self._state_lock:
             if not self.running:
                 return
             self.running = False
             self._stop_event.set()
-            if self._thread and self._thread.is_alive():
-                # give short grace to stop
-                pass
 
     def update_settings(self, promo_discount: Optional[int] = None, tick_speed: Optional[float] = None):
-        """Updates simulation parameters safely."""
+        """Safely modifies promotional markdown % and speed."""
         with self._state_lock:
             if promo_discount is not None:
-                self.promo_discount = max(0, min(50, promo_discount))
+                self.promo_discount = max(0, min(int(OperationalThresholds.MAX_PERMISSIBLE_DISCOUNT), promo_discount))
             if tick_speed is not None:
                 self.tick_speed = max(0.1, min(3.0, tick_speed))
 
     def reset_inventory(self):
-        """Synchronizes live memory inventory with the SQLite database."""
+        """Re-synchronizes live in-memory inventory with the persistent SQLite database."""
         with self._state_lock:
             db_inv = self.db.get_current_stock_on_hand()
             if db_inv:
@@ -189,7 +244,7 @@ class LiveOpsManager:
                 self.live_inventory = generate_initial_inventory()
             self.latest_event = {
                 "event_text": "Live inventory re-synchronized with SQLite database.",
-                "event_type": "Idle",
+                "event_type": SimEventType.IDLE,
                 "product_id": None,
                 "product_name": None,
                 "unit_price": 0.0,
@@ -197,26 +252,28 @@ class LiveOpsManager:
             }
 
     def get_stock_chart_data(self) -> List[Dict[str, Any]]:
-        """Returns categorized product inventory for dynamic visual chart highlighting."""
+        """
+        Builds categorized product inventory with dynamic event color taxonomy for bar charts.
+        """
         with self._state_lock:
             active_pid = self.latest_event.get("product_id")
-            event_type = self.latest_event.get("event_type", "Idle")
+            event_type = self.latest_event.get("event_type", SimEventType.IDLE)
 
             chart_items = []
             for pid, details in CATALOG.items():
                 stock = self.live_inventory.get(pid, 0)
                 # Dynamic event color taxonomy
                 if pid == active_pid:
-                    if event_type == "Purchase":
+                    if event_type == SimEventType.PURCHASE:
                         color = "#10b981"  # Emerald Restock
                         tag = "RESTOCKED"
-                    elif event_type == "Sale":
+                    elif event_type == SimEventType.SALE:
                         color = "#f59e0b"  # Amber Sale
                         tag = "PURCHASED"
                     else:
                         color = "#6366f1"  # Indigo Event
                         tag = "ACTIVE"
-                elif stock <= 15:
+                elif stock <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD:
                     color = "#ef4444"      # Safety stock breach (Crimson)
                     tag = "LOW SAFETY"
                 else:
@@ -238,8 +295,8 @@ class LiveOpsManager:
 
     def get_ledgers(self, limit: int = 8) -> Dict[str, Any]:
         """Fetches the latest real-time sales and procurement log entries."""
-        sales_df = self.db.fetch_logs("sales_ledger", limit=limit)
-        purchases_df = self.db.fetch_logs("purchase_ledger", limit=limit)
+        sales_df = self.db.fetch_logs(DBTable.SALES_LEDGER, limit=limit)
+        purchases_df = self.db.fetch_logs(DBTable.PURCHASE_LEDGER, limit=limit)
 
         sales = []
         if not sales_df.empty:
@@ -248,8 +305,8 @@ class LiveOpsManager:
                     "timestamp": str(r.get("timestamp", "")),
                     "product_name": str(r.get("product_name", "")),
                     "revenue": float(r.get("total_revenue", 0.0)),
-                    "customer_name": str(r.get("customer_name", "VIP Client")),
-                    "size_purchased": str(r.get("size_purchased", "M")),
+                    "customer_name": str(r.get("customer_name", BrandDefaults.FALLBACK_CLIENT_NAME)),
+                    "size_purchased": str(r.get("size_purchased", ApparelSize.DEFAULT_SIZE)),
                     "is_promotional": bool(r.get("is_promotional", 0))
                 })
 
@@ -269,30 +326,36 @@ class LiveOpsManager:
             "restocks_log": purchases
         }
 
+
 # Global singleton instance
 ops_manager = LiveOpsManager()
+
 
 @router.get("/status")
 def get_live_ops_status() -> Dict[str, Any]:
     """Returns current operational status, simulation parameters, and active product state."""
     return ops_manager.get_status()
 
+
 @router.post("/start")
 def start_live_ops() -> Dict[str, Any]:
-    """Activates the continuous discrete-event retail simulation loop."""
+    """Activates continuous discrete-event retail simulation loop."""
     ops_manager.start()
     return {"success": True, "message": "Live Store Operations loop activated.", "running": True}
 
+
 @router.post("/pause")
 def pause_live_ops() -> Dict[str, Any]:
-    """Pauses the continuous retail simulation loop in clean standby mode."""
+    """Pauses continuous retail simulation loop in clean standby mode."""
     ops_manager.pause()
     return {"success": True, "message": "Live Store Operations loop paused.", "running": False}
+
 
 @router.post("/tick")
 def step_simulation_tick() -> Dict[str, Any]:
     """Manually steps a single discrete simulation cycle."""
     return ops_manager.execute_tick()
+
 
 @router.post("/settings")
 def update_live_ops_settings(payload: LiveSettingsRequest) -> Dict[str, Any]:
@@ -307,11 +370,13 @@ def update_live_ops_settings(payload: LiveSettingsRequest) -> Dict[str, Any]:
         "tick_speed": ops_manager.tick_speed
     }
 
+
 @router.post("/reset")
 def reset_live_ops_inventory() -> Dict[str, Any]:
     """Re-synchronizes in-memory stock balances from SQLite persistent storage."""
     ops_manager.reset_inventory()
     return {"success": True, "message": "Live inventory re-synchronized with SQLite database."}
+
 
 @router.get("/stock-chart")
 def get_stock_chart() -> Dict[str, Any]:
@@ -322,16 +387,24 @@ def get_stock_chart() -> Dict[str, Any]:
         "latest_event": ops_manager.latest_event
     }
 
+
 @router.get("/logs")
 def get_live_ledgers(limit: int = Query(8, ge=1, le=50)) -> Dict[str, Any]:
     """Returns the most recent customer sales and inbound delivery logs."""
     return ops_manager.get_ledgers(limit=limit)
 
+
 @router.get("/stream")
 async def live_telemetry_stream():
     """
-    Server-Sent Events (SSE) telemetry endpoint.
-    Emits continuous real-time state and tick snapshots to connected clients.
+    Server-Sent Events (SSE) telemetry streaming endpoint.
+    
+    Working:
+    - Yields formatted JSON telemetry events containing current status, stock charts,
+      and transaction ledgers whenever frames advance or at periodic heartbeats.
+      
+    Why Required:
+    - Enables instantaneous UI updates in the browser without polling overhead.
     """
     async def event_generator():
         last_frame = -1

@@ -10,12 +10,23 @@ logger = setup_logging("marketing_optimizer")
 
 class MarketingCampaignOptimizer:
     """
-    Evaluates the effectiveness of promotional campaigns.
-    Calculates ROI, profit margins, and volume efficiency.
+    Evaluates financial ROI, margin elasticity, and volume efficiency across promotional campaigns.
+    
+    Working:
+    - Aggregates sales transaction ledgers by `campaign_name`.
+    - Computes realized margin percentage:
+        Margin % = (Gross Profit Yield / Total Revenue Generated) * 100
+    - Rates campaign efficiency:
+        'Highly Efficient' if margin > 30% (healthy luxury volume lift offsets discount).
+        'Insolvent Margin Loss' if margin <= 30% (excessive markdown eroding operating profit).
+        
+    Why Required:
+    - Prevents "unprofitable volume growth" where flash promotions boost gross sales
+      while diluting net profit dollars.
     """
     def __init__(self, sales_df: pd.DataFrame):
         """
-        Initializes the optimizer with sales data.
+        Initializes the optimizer with sales transaction history.
         
         Args:
             sales_df (pd.DataFrame): Dataframe containing transaction records with campaign tags.
@@ -24,10 +35,18 @@ class MarketingCampaignOptimizer:
 
     def evaluate_campaign_roi(self) -> Dict[str, Any]:
         """
-        Analyzes performance across all tracked promotional campaigns.
+        Analyzes performance metrics across all tracked promotional campaigns.
+        
+        Working:
+        - Filters out non-promotional baseline transactions.
+        - Calculates revenue contribution, volume moved, achieved margins, and efficiency ratings.
+        
+        Why Required:
+        - Informs the marketing director and Shivi Deep Agent which campaign structures
+          are delivering accretive cash flow.
         
         Returns:
-            Dict: Performance ledger containing revenue, profit, and efficiency metrics.
+            Dict[str, Any]: Ledger containing campaign revenue, profit, margin %, and efficiency ratings.
         """
         try:
             if 'is_promotional' not in self.sales.columns:

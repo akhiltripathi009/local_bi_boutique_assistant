@@ -1,31 +1,78 @@
+"""
+src/server/routes/crm.py
+========================
+FastAPI route controller for Boutique Customer Relationship Management (CRM) and VIP Patrons.
+
+Why Required:
+- High-end luxury boutiques thrive on personalized clienteling: tracking high-net-worth patron
+  profiles, lifetime spend, sizing requirements, style preferences, and upcoming birthdays.
+- Enables multi-channel concierge communications (WhatsApp VIP and Email) while strictly respecting
+  patron opt-in preferences.
+"""
+
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 import pandas as pd
 
 from src.data.db_manager import DatabaseManager
+from src.core.constants import LoyaltyTier
 
 router = APIRouter(prefix="/api/crm", tags=["Customer CRM & VIP Patrons"])
 
-def get_db():
+
+def get_db() -> DatabaseManager:
+    """
+    Dependency provider for DatabaseManager.
+    
+    Returns:
+        DatabaseManager: Initialized SQLite database manager.
+    """
     return DatabaseManager()
 
+
 class UpdateCustomerContactRequest(BaseModel):
-    name: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    preferred_size: Optional[str] = None
-    style_preference: Optional[str] = None
-    loyalty_tier: Optional[str] = None
-    opt_in_whatsapp: Optional[int] = None
-    opt_in_email: Optional[int] = None
+    """
+    Request model for updating VIP patron contact dossier and clienteling preferences.
+    
+    Why Required:
+    Validates optional field mutations (phone, email, preferred sizing, loyalty tier, and opt-ins)
+    before updating SQLite customer profile records.
+    """
+    name: Optional[str] = Field(None, description="Updated patron full name.")
+    phone: Optional[str] = Field(None, description="International phone format (e.g. '+1-555-0101').")
+    email: Optional[str] = Field(None, description="Email address.")
+    preferred_size: Optional[str] = Field(None, description="Sizing preference ('S', 'M', 'L', 'XL').")
+    style_preference: Optional[str] = Field(None, description="Aesthetic style taste (e.g. 'Minimalist Knitwear').")
+    loyalty_tier: Optional[str] = Field(None, description="Client loyalty status tier.")
+    opt_in_whatsapp: Optional[int] = Field(None, ge=0, le=1, description="1 if opted into WhatsApp concierge, 0 otherwise.")
+    opt_in_email: Optional[int] = Field(None, ge=0, le=1, description="1 if opted into email dispatches, 0 otherwise.")
+
 
 @router.get("/customers")
 def list_customers(
     tier: Optional[str] = None,
     search: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Lists all boutique VIP customers with tier filtering and search."""
+    """
+    Retrieves all boutique VIP customer profiles with tier filtering and full-text search.
+    
+    Working:
+    - Queries `customers` table for all registered profiles.
+    - Filters by loyalty tier if specified.
+    - Applies multi-column search across name, email, phone, and style preference.
+    
+    Why Required:
+    - Powers the VIP Patron directory in the Atelier CRM portal, allowing stylists
+      to quickly access client information before salon consultations.
+      
+    Args:
+        tier (Optional[str]): Loyalty tier filter (e.g., 'VIP Platinum') or None for all.
+        search (Optional[str]): Keyword search string.
+        
+    Returns:
+        Dict[str, Any]: List of matching customer records and count.
+    """
     db = get_db()
     df = db.get_all_customers()
     if df.empty:
@@ -51,9 +98,26 @@ def list_customers(
         "customers": records
     }
 
+
 @router.get("/customer/{customer_id}")
 def get_customer_profile(customer_id: int) -> Dict[str, Any]:
-    """Retrieves 360-degree VIP client dossier including purchase history."""
+    """
+    Retrieves a 360-degree VIP client dossier including complete historical purchase ledger.
+    
+    Working:
+    - Fetches customer base attributes (lifetime spend, tier, sizing, opt-ins) from SQLite.
+    - Queries `sales_ledger` for all past transactions attributed to this customer ID.
+    
+    Why Required:
+    - Gives boutique concierges and Shivi Deep Agent full transactional context to tailor
+      bespoke styling recommendations and birthday perks.
+      
+    Args:
+        customer_id (int): Primary key ID of the customer.
+        
+    Returns:
+        Dict[str, Any]: Profile dictionary and chronological purchase history list.
+    """
     db = get_db()
     profile = db.get_customer_by_id(customer_id)
     if not profile:
@@ -69,12 +133,29 @@ def get_customer_profile(customer_id: int) -> Dict[str, Any]:
         "purchase_history": history
     }
 
+
 @router.post("/customer/{customer_id}/update")
 def update_customer_contact(
     customer_id: int,
     req: UpdateCustomerContactRequest
 ) -> Dict[str, Any]:
-    """Updates client contact info, sizing, and multi-channel opt-in preferences."""
+    """
+    Updates client contact details, preferred apparel sizing, and communication opt-ins.
+    
+    Working:
+    - Updates only specified fields in SQLite `customers` table.
+    - Re-fetches and returns the fresh record.
+    
+    Why Required:
+    - Allows clienteling stylists to record size changes or opt-in preferences during store visits.
+    
+    Args:
+        customer_id (int): Target customer ID.
+        req (UpdateCustomerContactRequest): Fields to update.
+        
+    Returns:
+        Dict[str, Any]: Updated profile record and confirmation message.
+    """
     db = get_db()
     success, message = db.update_customer_contact(
         customer_id=customer_id,
@@ -98,9 +179,25 @@ def update_customer_contact(
         "customer": updated
     }
 
+
 @router.get("/birthdays")
 def get_upcoming_birthdays(days_ahead: int = Query(default=14, ge=1, le=60)) -> Dict[str, Any]:
-    """Retrieves VIP patrons celebrating birthdays in the upcoming window."""
+    """
+    Identifies VIP patrons celebrating birthdays within an upcoming time window.
+    
+    Working:
+    - Evaluates calendar month and day differences between today and patron date-of-birth (DOB).
+    - Sorts patrons by closest upcoming birthday.
+    
+    Why Required:
+    - Powers Shivi Deep Agent's automated birthday perk concierge routine and stylist reminders.
+    
+    Args:
+        days_ahead (int): Forecast horizon window in days (default 14, max 60).
+        
+    Returns:
+        Dict[str, Any]: List of patron birthday objects with days_until countdown.
+    """
     db = get_db()
     birthdays = db.get_upcoming_birthday_customers(days_ahead=days_ahead)
     return {

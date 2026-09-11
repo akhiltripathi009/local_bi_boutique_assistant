@@ -23,6 +23,20 @@ logger = setup_logging("competitor_analysis")
 class CompetitorAnalyzer:
     """
     Advanced retail pricing intelligence and price elasticity simulation engine.
+    
+    Working:
+    - Calculates category-weighted price elasticity of demand:
+        % Volume Change = Elasticity * % Price Change
+        Projected Units = Base Volume * (1 + % Volume Change)
+    - Models the Competitor Price Index (CPI):
+        CPI = (Your Price / Market Reference Price) * 100
+    - Identifies underpriced margin expansion opportunities where current prices sit below
+      contemporary and luxury benchmarks without consumer pushback.
+      
+    Why Required:
+    - Boutique retailers often underprice core high-demand apparel (e.g. Italian linen, cashmere),
+      leaving substantial gross margin on the table, or overprice seasonal basics, dampening sell-through.
+      This engine prescribes safe repricing points that maximize gross profit dollars.
     """
 
     # Category-specific price elasticity of demand (retail fashion benchmarks)

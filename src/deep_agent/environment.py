@@ -98,6 +98,16 @@ class PythonSandbox:
     """
     Safe, isolated Python code execution sandbox for Shivi to run ad-hoc analytics,
     velocity calculations, inventory forecasting, and discount simulations.
+    
+    Working:
+    - Pre-execution AST/lexical safety filter blocking dangerous system primitives
+      (os, subprocess, eval, open, globals).
+    - Injects safe analytical namespaces (pandas, numpy, math, datetime) and live `db` accessor.
+    - Captures stdout/stderr via `io.StringIO` and tracks execution duration.
+    
+    Why Required:
+    - Allows the autonomous agent and human analysts to write and run dynamic data science code
+      directly against live SQLite data without endangering server filesystem or host process security.
     """
     FORBIDDEN_CALLS = [
         "os.system", "subprocess", "shutil.rmtree", "open(", "import os",
@@ -110,6 +120,13 @@ class PythonSandbox:
     def execute_code(self, code: str, custom_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Executes Python code in a restricted scope, capturing stdout.
+        
+        Args:
+            code (str): Python script to execute.
+            custom_context (Optional[Dict[str, Any]]): Optional custom variables to inject.
+            
+        Returns:
+            Dict[str, Any]: Execution result containing output text, success flag, and runtime in seconds.
         """
         # 1. Pre-execution Safety Inspection
         for forbidden in self.FORBIDDEN_CALLS:
