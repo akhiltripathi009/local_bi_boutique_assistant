@@ -1,4 +1,4 @@
-﻿"""
+"""
 src/core/logger.py
 ==================
 Unicode-safe logging infrastructure supporting Windows console environments (cp1252/utf-8)

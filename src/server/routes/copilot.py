@@ -220,7 +220,8 @@ def stream_copilot_chat(req: StreamChatRequest):
         def action_event_stream():
             try:
                 # Immediate acknowledgment token so UI responds instantly while PDF compiles and SMTP connects
-                yield f"data: {json.dumps({'token': '⚡ *Engaging Shivi Deep Agent & validating operational parameters...*\n\n'})}\n\n"
+                ack_payload = json.dumps({"token": "⚡ *Engaging Shivi Deep Agent & validating operational parameters...*\n\n"})
+                yield f"data: {ack_payload}\n\n"
                 time.sleep(0.05)
 
                 action_res = agent.execute_chat_action(latest_user_query)
