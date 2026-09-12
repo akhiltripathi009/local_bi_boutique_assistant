@@ -1,10 +1,30 @@
-streamlit>=1.35.0
-plotly>=5.20.0
+# ==============================================================================
+# Mishika Fashion Luxury Boutique - Production & SaaS Dependencies
+# ==============================================================================
+
+# FastAPI & Production ASGI Server
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.6.0
+python-multipart>=0.0.9
+httpx>=0.27.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Analytics, Simulation & Visualization
 pandas>=2.1.0
 numpy>=1.26.0
-ollama>=0.2.1
-streamlit-lottie>=0.0.5
+plotly>=5.20.0
+
+# Document & Audit Report Generation (PDF & Presentation)
 reportlab>=4.0.0
 python-pptx>=1.0.0
+
+# AI Engines (Google AI Studio Gemini & Local Ollama)
 google-genai>=2.23.0
 google-generativeai>=0.8.0
+ollama>=0.2.1
+
+# Streamlit Legacy Presentation Portal
+streamlit>=1.35.0
+streamlit-lottie>=0.0.5

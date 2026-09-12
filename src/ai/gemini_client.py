@@ -37,13 +37,15 @@ logger = logging.getLogger("gemini_client")
 
 # Curated Google AI Studio Production Models
 GEMINI_MODELS = [
+    "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash-lite",
     "gemini-1.5-flash",
     "gemini-1.5-pro",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
 ]
 
-DEFAULT_GEMINI_MODEL = "gemini-1.5-flash"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
 
 class GoogleGeminiBoutiqueAnalyst:
@@ -150,6 +152,10 @@ class GoogleGeminiBoutiqueAnalyst:
         # Strip any UI formatting labels
         if " " in active_model:
             active_model = active_model.split(" ")[0].strip()
+
+        # Seamlessly map older 1.5 tags to active 2.5 production models
+        if "1.5" in active_model or not active_model.startswith("gemini"):
+            active_model = "gemini-2.5-flash"
 
         # Check API key presence
         if not self.is_configured():

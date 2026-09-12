@@ -55,16 +55,22 @@ def main():
     else:
         logger.info(f"Database verified at: {DB_PATH}")
 
-    # 2. Check Ollama Local AI connection
-    logger.info("Checking Ollama local AI server connectivity...")
+    # 2. Check AI Engine connectivity (Google AI Studio Gemini & Local Ollama)
+    logger.info("Initializing Boutique Intelligence AI engine...")
     try:
-        models = LocalOllamaBoutiqueAnalyst().get_available_models()
-        if models:
-            logger.info(f"Ollama AI Online! Available models: {', '.join(models)}")
+        from src.ai import GoogleGeminiBoutiqueAnalyst, LocalOllamaBoutiqueAnalyst
+        gemini_analyst = GoogleGeminiBoutiqueAnalyst()
+        if gemini_analyst.is_configured():
+            logger.info("✨ Google AI Studio (Gemini) Online! Primary Cloud Intelligence active.")
         else:
-            logger.warning("Ollama not currently detected. Boutique BI and rule-based systems will run in offline mode.")
+            logger.info("Checking Local Ollama daemon connectivity...")
+            models = LocalOllamaBoutiqueAnalyst().get_available_models()
+            if models:
+                logger.info(f"🦙 Local Ollama Online! Available models: {', '.join(models)}")
+            else:
+                logger.info("Local Ollama not detected. Set GEMINI_API_KEY to activate Google AI Studio.")
     except Exception as e:
-        logger.warning(f"Ollama check skipped: {e}")
+        logger.debug(f"AI engine check skipped: {e}")
 
     # 3. Dynamic cloud port resolution (Google Cloud Run / Render inject $PORT)
     port = int(os.getenv("PORT", 8000))

@@ -125,8 +125,11 @@ class LocalOllamaBoutiqueAnalyst:
     def get_available_models(self) -> List[str]:
         """
         Safely inspects the local Ollama instance and returns available chat models.
+        Returns an empty list without noise if Ollama is not installed or running.
         """
         try:
+            if ollama is None:
+                return []
             res = ollama.list()
             # Handle both object attributes and dict-like structures
             model_list = []
@@ -140,12 +143,10 @@ class LocalOllamaBoutiqueAnalyst:
             if "llama3.2:3b" in model_list:
                 model_list.remove("llama3.2:3b")
                 model_list.insert(0, "llama3.2:3b")
-            elif not model_list:
-                model_list = ["llama3.2:3b"]
             return model_list
         except Exception as e:
-            logger.warning(f"Could not list Ollama models: {e}. Defaulting to ['llama3.2:3b']")
-            return ["llama3.2:3b"]
+            logger.debug(f"Local Ollama daemon not active: {e}")
+            return []
 
     def build_live_boutique_context(self, db) -> Dict[str, Any]:
         """

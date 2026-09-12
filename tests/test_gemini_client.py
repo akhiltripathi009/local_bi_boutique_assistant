@@ -25,12 +25,12 @@ class TestGoogleGeminiClient(unittest.TestCase):
 
     def test_01_gemini_analyst_initialization(self):
         """Verifies GoogleGeminiBoutiqueAnalyst initializes cleanly without errors."""
-        analyst = GoogleGeminiBoutiqueAnalyst(model_name="gemini-1.5-flash")
-        self.assertEqual(analyst.model_name, "gemini-1.5-flash")
+        analyst = GoogleGeminiBoutiqueAnalyst(model_name="gemini-2.5-flash")
+        self.assertEqual(analyst.model_name, "gemini-2.5-flash")
         models = analyst.get_available_models()
-        self.assertIn("gemini-1.5-flash", models)
-        self.assertIn("gemini-1.5-pro", models)
-        self.assertIn("gemini-2.0-flash", models)
+        self.assertTrue(len(models) > 0)
+        self.assertTrue(any("gemini" in m.lower() for m in models))
+        self.assertIn("gemini-2.5-flash", models)
 
     def test_02_unified_factory_resolution(self):
         """Verifies get_boutique_analyst correctly resolves Gemini vs Ollama based on model."""
@@ -87,9 +87,8 @@ class TestGoogleGeminiClient(unittest.TestCase):
         data = resp.json()
         self.assertTrue(data.get("success"))
         models = data.get("models", [])
-        self.assertIn("gemini-1.5-flash", models)
-        self.assertIn("gemini-1.5-pro", models)
-        self.assertIn("gemini-2.0-flash", models)
+        self.assertTrue(len(models) > 0)
+        self.assertIn("gemini-2.5-flash", models)
         self.assertIn("gemini_models", data)
         self.assertIn("gemini_configured", data)
 
