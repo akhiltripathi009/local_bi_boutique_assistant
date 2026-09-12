@@ -1965,6 +1965,79 @@ const App = {
     }
   },
 
+  formatMarkdown(text) {
+    if (!text) return '';
+    let escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // Headers
+    escaped = escaped.replace(/^### (.*$)/gim, '<h4 class="chat-h4">$1</h4>');
+    escaped = escaped.replace(/^## (.*$)/gim, '<h3 class="chat-h3">$1</h3>');
+    
+    // Bold
+    escaped = escaped.replace(/\*\*(.*?)\*\*/gim, '<b>$1</b>');
+    
+    // Inline code
+    escaped = escaped.replace(/`([^`]+)`/gim, '<code class="chat-inline-code">$1</code>');
+    
+    // Markdown links [text](url)
+    escaped = escaped.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" class="chat-link">$1</a>');
+    
+    // Bullet points
+    escaped = escaped.replace(/^[•\-\*]\s+(.*$)/gim, '<div class="chat-bullet">• $1</div>');
+    
+    // Newlines
+    escaped = escaped.replace(/\n/g, '<br>');
+    return escaped;
+  },
+
+  renderActionCard(card) {
+    if (!card) return '';
+    const badgeColor = card.badge_color || '#10b981';
+    const fieldsHtml = (card.fields || []).map(f => `
+      <div class="action-card-field">
+        <span class="action-card-label">${f.label}:</span>
+        <span class="action-card-val">${f.val}</span>
+      </div>
+    `).join('');
+
+    let buttonsHtml = '';
+    if (card.download_url) {
+      buttonsHtml += `
+        <a href="${card.download_url}" target="_blank" class="btn btn-primary btn-sm btn-action-dl">
+          📥 Download PDF (${card.report_name || 'Report'})
+        </a>
+      `;
+    }
+    if (card.mailto_link) {
+      buttonsHtml += `
+        <a href="${card.mailto_link}" class="btn btn-secondary btn-sm btn-action-mail">
+          ✉️ Open Email Draft
+        </a>
+      `;
+    }
+
+    return `
+      <div class="chat-action-card">
+        <div class="action-card-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:16px;">⚡</span>
+            <span style="font-weight:700; color:var(--gold-light); font-size:12.5px;">${card.title || 'Shivi Operational Action Executed'}</span>
+          </div>
+          <span class="action-card-badge" style="background:${badgeColor}22; color:${badgeColor}; border:1px solid ${badgeColor}66;">
+            ${card.status || 'Active'}
+          </span>
+        </div>
+        <div class="action-card-body">
+          ${fieldsHtml}
+        </div>
+        ${buttonsHtml ? `<div class="action-card-actions">${buttonsHtml}</div>` : ''}
+      </div>
+    `;
+  },
+
   async sendCopilotMessage() {
     const input = document.getElementById('copilot-chat-input');
     if (!input || !input.value.trim() || this.state.isStreaming) return;
@@ -1978,39 +2051,57 @@ const App = {
 
     // Prepare assistant placeholder
     const assistantIndex = this.state.copilotMessages.length;
-    this.state.copilotMessages.push({ role: 'assistant', content: '' });
+    this.state.copilotMessages.push({ role: 'assistant', content: '', action: null });
     this.state.isStreaming = true;
 
     // Create assistant message element in DOM
     const chatBody = document.getElementById('copilot-chat-body');
     const assistantMsgEl = document.createElement('div');
     assistantMsgEl.className = 'chat-message assistant';
-    assistantMsgEl.innerHTML = `<div class="chat-bubble" id="streaming-token-bubble">⏳ Thinking...</div>`;
+    assistantMsgEl.innerHTML = `<div class="chat-bubble" id="streaming-token-bubble">⏳ Thinking & Evaluating Operational Intent...</div>`;
     chatBody.appendChild(assistantMsgEl);
     chatBody.scrollTop = chatBody.scrollHeight;
 
     let fullResponse = '';
+    let currentActionCard = null;
     const bubbleEl = document.getElementById('streaming-token-bubble');
 
+    // Clean conversational history payload (strip action objects so only role and text are transmitted)
+    const cleanMessages = this.state.copilotMessages.slice(0, -1).map(m => ({
+      role: m.role,
+      content: m.content || ''
+    }));
+
     await API.streamCopilotChat(
-      this.state.copilotMessages.slice(0, -1),
+      cleanMessages,
       this.state.activeModel,
       this.state.activePersona,
       (token) => {
-        if (fullResponse === '') bubbleEl.innerText = '';
+        if (fullResponse === '') bubbleEl.innerHTML = '';
         fullResponse += token;
-        bubbleEl.innerText = fullResponse;
+        const actionHtml = currentActionCard ? this.renderActionCard(currentActionCard) : '';
+        bubbleEl.innerHTML = (actionHtml ? actionHtml + '<div style="margin-top:10px;">' : '<div>') + this.formatMarkdown(fullResponse) + '</div>';
         chatBody.scrollTop = chatBody.scrollHeight;
       },
       () => {
         this.state.isStreaming = false;
         this.state.copilotMessages[assistantIndex].content = fullResponse;
+        if (currentActionCard) {
+          this.state.copilotMessages[assistantIndex].action = currentActionCard;
+          if (this.state.activeTab === 'tab-agent') this.loadAgentData();
+        }
         bubbleEl.removeAttribute('id');
       },
       (err) => {
         this.state.isStreaming = false;
         bubbleEl.innerText = `\n\n❌ Connection notice: ${err.message}`;
         bubbleEl.style.color = '#f43f5e';
+      },
+      (actionCard) => {
+        currentActionCard = actionCard;
+        const actionHtml = this.renderActionCard(actionCard);
+        bubbleEl.innerHTML = actionHtml + `<div>${this.formatMarkdown(fullResponse)}</div>`;
+        chatBody.scrollTop = chatBody.scrollHeight;
       }
     );
   },
@@ -2018,12 +2109,72 @@ const App = {
   renderChatMessages() {
     const chatBody = document.getElementById('copilot-chat-body');
     if (!chatBody) return;
-    chatBody.innerHTML = this.state.copilotMessages.map(m => `
-      <div class="chat-message ${m.role}">
-        <div class="chat-bubble">${m.content}</div>
-      </div>
-    `).join('');
+    chatBody.innerHTML = this.state.copilotMessages.map(m => {
+      const actionHtml = m.action ? this.renderActionCard(m.action) : '';
+      const textHtml = this.formatMarkdown(m.content);
+      return `
+        <div class="chat-message ${m.role}">
+          <div class="chat-bubble">
+            ${actionHtml}
+            ${textHtml ? `<div>${textHtml}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
     chatBody.scrollTop = chatBody.scrollHeight;
+  },
+
+  sendPresetCopilotAction(query) {
+    const input = document.getElementById('copilot-chat-input');
+    if (!input) return;
+    input.value = query;
+    this.sendCopilotMessage();
+  },
+
+  async executeAgentConsoleCommand() {
+    const input = document.getElementById('agent-console-input');
+    if (!input || !input.value.trim()) return;
+    const query = input.value.trim();
+    const btn = document.getElementById('btn-agent-console-submit');
+    const resultBox = document.getElementById('agent-console-result');
+
+    if (btn) btn.disabled = true;
+    if (resultBox) {
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = '<div style="color:var(--gold-light); padding:10px;">⏳ Shivi executing operational command: <b>"' + query + '"</b>...</div>';
+    }
+
+    try {
+      const res = await API.executeChatAction(query);
+      if (res && res.result) {
+        const r = res.result;
+        const cardHtml = this.renderActionCard(r.card);
+        const narrHtml = this.formatMarkdown(r.narrative);
+        if (resultBox) {
+          resultBox.innerHTML = cardHtml + '<div style="margin-top:12px; font-size:13px; color:var(--text-secondary); line-height:1.6;">' + narrHtml + '</div>';
+        }
+        this.loadAgentData();
+      } else {
+        // Fallback to copilot drawer for conversational answer
+        this.openCopilotWithQuery(query);
+      }
+    } catch (err) {
+      if (resultBox) {
+        resultBox.innerHTML = '<div style="color:#ef4444; padding:10px;">❌ Command error: ' + err.message + '</div>';
+      }
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  openCopilotWithQuery(query) {
+    const drawer = document.getElementById('copilot-drawer');
+    if (drawer) drawer.classList.add('active');
+    const input = document.getElementById('copilot-chat-input');
+    if (input) {
+      input.value = query;
+      this.sendCopilotMessage();
+    }
   },
 
   // ----------------------------------------------------

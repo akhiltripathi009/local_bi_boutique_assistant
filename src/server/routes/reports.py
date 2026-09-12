@@ -170,3 +170,37 @@ def download_enterprise_audit_pdf(scope: str = "daily", download: bool = False):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate Enterprise PDF: {e}")
 
+
+@router.get("/latest-generated-pdf")
+def download_latest_generated_pdf(download: bool = False):
+    """
+    Streams the most recent boardroom PDF compiled by Shivi Deep Agent via chat or routine trigger.
+    Guarantees immediate 1-click download access from chat action cards.
+    """
+    db = get_db()
+    try:
+        from src.deep_agent.chat_executor import LATEST_GENERATED_PDF
+        pdf_bytes = LATEST_GENERATED_PDF.get("bytes")
+        filename = LATEST_GENERATED_PDF.get("filename")
+
+        if not pdf_bytes or not filename:
+            # Fallback to storage/exports/latest_audit.pdf
+            disk_path = Path("storage/exports/latest_audit.pdf")
+            if disk_path.exists():
+                with open(disk_path, "rb") as f:
+                    pdf_bytes = f.read()
+                filename = f"MishikaBoutique_Audit_Report_{datetime.now().strftime('%Y%m%d')}.pdf"
+            else:
+                # Compile fresh closing audit PDF on the fly
+                pdf_bytes = generate_closing_audit_pdf(db)
+                filename = f"MishikaBoutique_Closing_Audit_{datetime.now().strftime('%Y%m%d')}.pdf"
+
+        disposition = "attachment" if download else "inline"
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"{disposition}; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stream latest generated PDF: {e}")
+

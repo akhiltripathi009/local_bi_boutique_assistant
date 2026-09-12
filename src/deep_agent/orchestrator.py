@@ -22,6 +22,7 @@ from src.deep_agent.fault_tolerance import RetryPolicy, CallBudgetTracker, Deter
 from src.deep_agent.guardrails import PIIGuardrail, DiscountSafetyGuardrail, ContentVoiceGuardrail
 from src.deep_agent.steering import SteeringManager
 from src.deep_agent.delivery import EmailDeliveryService
+from src.deep_agent.chat_executor import ShiviChatActionExecutor, ChatActionResult
 
 logger = logging.getLogger("shivi_orchestrator")
 
@@ -30,8 +31,8 @@ class ShiviDeepAgent:
     Master Enterprise Deep Boutique Agent named Shivi.
     Provides autonomous multi-task execution for luxury boutique operations.
     """
-    def __init__(self, db_manager):
-        self.db = db_manager
+    def __init__(self, db_manager=None, db=None):
+        self.db = db_manager if db_manager is not None else db
         self.name = "Shivi"
         self.title = "Enterprise AI Deep Boutique Agent"
         
@@ -58,6 +59,9 @@ class ShiviDeepAgent:
         # Active Plan State (Initialized with default continuous orchestration plan)
         self.current_plan: Optional[AgentPlan] = HierarchicalPlanner.create_default_orchestration_plan()
         
+        # 6. Conversational Chat Action Execution Engine
+        self.chat_executor = ShiviChatActionExecutor(self)
+
         # Register Core Tools in Registry
         self._register_internal_tools()
         
@@ -534,3 +538,25 @@ class ShiviDeepAgent:
     def run_sandbox_code(self, code: str) -> Dict[str, Any]:
         """Runs Python analysis scripts safely in the execution sandbox."""
         return self.sandbox.execute_code(code)
+
+    # ==========================================
+    # CHAT-DRIVEN ACTION EXECUTION
+    # ==========================================
+    def detect_chat_action(self, query: str) -> Optional[Dict[str, Any]]:
+        """
+        Scans a natural language user query for actionable operational intent.
+        Returns parsed intent metadata or None if advisory/informational.
+        """
+        return self.chat_executor.detect_action(query)
+
+    def execute_chat_action(self, query: str, to_email: Optional[str] = None) -> Optional[ChatActionResult]:
+        """
+        Executes a conversational operational command (e.g. sending reports,
+        running routines, updating circuit breakers, approving HITL requests).
+        """
+        intent = self.detect_chat_action(query)
+        if not intent:
+            return None
+        if to_email and intent.get("action") == "send_report_email":
+            intent["target_email"] = to_email
+        return self.chat_executor.execute_action(intent, query)

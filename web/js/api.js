@@ -155,7 +155,7 @@ const API = {
   /**
    * Stream copilot chat via Server-Sent Events (SSE)
    */
-  async streamCopilotChat(messages, model, personaKey, onToken, onComplete, onError) {
+  async streamCopilotChat(messages, model, personaKey, onToken, onComplete, onError, onAction) {
     try {
       const response = await fetch('/api/copilot/stream', {
         method: 'POST',
@@ -189,6 +189,9 @@ const API = {
             if (jsonStr) {
               try {
                 const data = JSON.parse(jsonStr);
+                if (data.action && onAction) {
+                  onAction(data.action);
+                }
                 if (data.token) {
                   onToken(data.token);
                 }
@@ -212,6 +215,11 @@ const API = {
       if (onError) onError(err);
     }
   },
+
+  executeChatAction: (query, toEmail = null) => API.request('/api/copilot/action', {
+    method: 'POST',
+    body: JSON.stringify({ query, to_email: toEmail })
+  }),
 
   // Sandbox
   getSandboxPresets: () => API.request('/api/sandbox/presets'),

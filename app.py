@@ -1202,8 +1202,31 @@ elif view_selection == "🤖 AI Copilot Studio":
                 use_container_width=True
             )
 
-        # --- STEP 5.5: 1-Click Executive Prompt Chips Toolbar ---
+        # --- STEP 5.5: 1-Click Executive Prompt & Operational Action Chips ---
         st.markdown("<div style='margin-bottom:8px;'>", unsafe_allow_html=True)
+        st.caption("⚡ **1-Click Operational Commands & Strategic Prompts:**")
+        action_cols = st.columns(5)
+        with action_cols[0]:
+            if st.button("📧 Email Audit to Admin", key="action_chip_email_audit", use_container_width=True):
+                st.session_state.pending_copilot_query = "Send today's audit report to admin"
+                st.rerun()
+        with action_cols[1]:
+            if st.button("🌅 Morning Briefing", key="action_chip_opening", use_container_width=True):
+                st.session_state.pending_copilot_query = "Run morning opening routine"
+                st.rerun()
+        with action_cols[2]:
+            if st.button("🌆 Evening Closing", key="action_chip_closing", use_container_width=True):
+                st.session_state.pending_copilot_query = "Run evening closing audit"
+                st.rerun()
+        with action_cols[3]:
+            if st.button("🔔 Check Restock Alerts", key="action_chip_restock", use_container_width=True):
+                st.session_state.pending_copilot_query = "Scan back in stock alerts"
+                st.rerun()
+        with action_cols[4]:
+            if st.button("🎂 Dispatch Birthday Perks", key="action_chip_bday", use_container_width=True):
+                st.session_state.pending_copilot_query = "Dispatch birthday perks"
+                st.rerun()
+
         chip_cols = st.columns(len(PRESET_PROMPT_CHIPS))
         for idx, chip in enumerate(PRESET_PROMPT_CHIPS):
             with chip_cols[idx]:
@@ -1223,12 +1246,20 @@ elif view_selection == "🤖 AI Copilot Studio":
                                 st.session_state.pending_copilot_query = q
                                 st.rerun()
 
-        # --- STEP 5.7: Streaming Conversational Chat via Local Ollama ---
+        # --- STEP 5.7: Streaming Conversational Chat & Action Engine ---
         chat_container = st.container(height=480)
         with chat_container:
             for msg in st.session_state.copilot_messages:
                 with st.chat_message(msg["role"]):
                     st.markdown(msg["content"])
+                    if msg.get("pdf_bytes") and msg.get("pdf_name"):
+                        st.download_button(
+                            label=f"📥 Download {msg['pdf_name']}",
+                            data=msg["pdf_bytes"],
+                            file_name=msg["pdf_name"],
+                            mime="application/pdf",
+                            key=f"dl_msg_{msg['pdf_name']}"
+                        )
 
             # Process pending query if present
             if st.session_state.get("pending_copilot_query"):
@@ -1237,18 +1268,39 @@ elif view_selection == "🤖 AI Copilot Studio":
                 with st.chat_message("user"):
                     st.markdown(user_query)
 
-                with st.chat_message("assistant"):
-                    stream_gen = local_analyst.stream_copilot_response(
-                        messages=st.session_state.copilot_messages,
-                        model=st.session_state.copilot_model,
-                        persona_key=st.session_state.copilot_persona,
-                        live_context=live_ctx
-                    )
-                    full_resp = st.write_stream(stream_gen)
-                    st.session_state.copilot_messages.append({"role": "assistant", "content": full_resp})
+                # Check if user query is an operational action for Shivi
+                action_intent = shivi_agent.detect_chat_action(user_query)
+                if action_intent:
+                    with st.chat_message("assistant"):
+                        with st.spinner("⚡ Shivi Deep Agent executing operational command..."):
+                            action_res = shivi_agent.execute_chat_action(user_query)
+                            st.markdown(action_res.narrative)
+                            msg_record = {"role": "assistant", "content": action_res.narrative}
+                            if action_res.pdf_bytes:
+                                st.download_button(
+                                    label=f"📥 Download {action_res.pdf_name}",
+                                    data=action_res.pdf_bytes,
+                                    file_name=action_res.pdf_name,
+                                    mime="application/pdf",
+                                    key=f"dl_res_{action_res.pdf_name}",
+                                    type="primary"
+                                )
+                                msg_record["pdf_bytes"] = action_res.pdf_bytes
+                                msg_record["pdf_name"] = action_res.pdf_name
+                            st.session_state.copilot_messages.append(msg_record)
+                else:
+                    with st.chat_message("assistant"):
+                        stream_gen = local_analyst.stream_copilot_response(
+                            messages=st.session_state.copilot_messages,
+                            model=st.session_state.copilot_model,
+                            persona_key=st.session_state.copilot_persona,
+                            live_context=live_ctx
+                        )
+                        full_resp = st.write_stream(stream_gen)
+                        st.session_state.copilot_messages.append({"role": "assistant", "content": full_resp})
 
         # Chat Input Bar
-        studio_input = st.chat_input("Inquire with your Boutique Copilot about inventory, pricing, or margin...")
+        studio_input = st.chat_input("Ask or command: e.g. 'Send today's audit report to example@gmail.com' or 'Halt sales for Saree'...")
         if studio_input:
             st.session_state.pending_copilot_query = studio_input
             st.rerun()

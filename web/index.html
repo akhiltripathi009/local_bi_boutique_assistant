@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
   <!-- Luxury Atelier Design System -->
-  <link rel="stylesheet" href="/css/style.css?v=2.4.7">
+  <link rel="stylesheet" href="/css/style.css?v=3.0.0">
 </head>
 <body>
 
@@ -862,6 +862,28 @@
         </div>
       </div>
 
+      <!-- Shivi Conversational Action Console -->
+      <div class="glass-card" style="margin-bottom:20px; padding:18px; border:1px solid rgba(212,175,55,0.3); background:linear-gradient(135deg, rgba(20,24,36,0.95), rgba(15,18,28,0.98));">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:18px;">💬</span>
+            <span style="font-weight:700; color:var(--gold-light); font-size:14px;">Command Shivi via Natural Language Chat</span>
+            <span class="badge-emerald" style="font-size:10px;">Autonomous Execution Active</span>
+          </div>
+          <span style="font-size:11px; color:var(--text-muted);">Supports live SMTP dispatch, PDF audits, VIP lookups & circuit breakers</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="agent-console-input" class="form-control" style="flex:1; font-size:13px; padding:10px 14px;" 
+                 placeholder="Type an operational command, e.g. 'Send today\'s audit report to example@gmail.com' or 'Run evening closing audit'..." 
+                 onkeydown="if(event.key==='Enter'){App.executeAgentConsoleCommand();}">
+          <button class="btn btn-primary" id="btn-agent-console-submit" onclick="App.executeAgentConsoleCommand()" style="padding:0 20px; white-space:nowrap;">
+            ⚡ Execute Command
+          </button>
+        </div>
+        <!-- Console Result Card Placeholder -->
+        <div id="agent-console-result" style="display:none; margin-top:14px; padding:14px; background:rgba(0,0,0,0.35); border-radius:var(--radius-sm); border:1px solid var(--border-subtle);"></div>
+      </div>
+
       <!-- Live Action Trigger Feedback Status -->
       <div id="agent-trigger-status" style="display:none; margin-bottom:16px; padding:12px 18px; background:rgba(212,175,55,0.15); border:1px solid var(--gold-primary); border-radius:var(--radius-md); font-weight:600; color:var(--gold-light);"></div>
 
@@ -1508,14 +1530,36 @@
 
     <!-- Chat Input Footer -->
     <div class="drawer-footer">
+      <!-- Quick Action Execution Chips -->
+      <div class="copilot-action-chips-bar" id="copilot-action-chips">
+        <button type="button" class="copilot-chip-btn" onclick="App.sendPresetCopilotAction('Send today\'s audit report to admin')">
+          📧 Email Today's Audit to Admin
+        </button>
+        <button type="button" class="copilot-chip-btn" onclick="App.sendPresetCopilotAction('Run morning opening routine')">
+          🌅 Morning Opening
+        </button>
+        <button type="button" class="copilot-chip-btn" onclick="App.sendPresetCopilotAction('Run evening closing audit')">
+          🌆 Evening Closing
+        </button>
+        <button type="button" class="copilot-chip-btn" onclick="App.sendPresetCopilotAction('Scan back in stock alerts')">
+          🔔 Check Restock
+        </button>
+        <button type="button" class="copilot-chip-btn" onclick="App.sendPresetCopilotAction('Dispatch birthday perks')">
+          🎂 Birthday Perks
+        </button>
+        <button type="button" class="copilot-chip-btn" onclick="App.sendPresetCopilotAction('Curate trending fashion news')">
+          📰 Fashion News
+        </button>
+      </div>
+
       <div class="chat-input-row">
-        <input type="text" id="copilot-chat-input" class="form-control" placeholder="Ask about sales, stockouts, VIP trends..." autocomplete="off">
+        <input type="text" id="copilot-chat-input" class="form-control" placeholder="Ask or command: e.g. 'Send today's audit report to test@gmail.com'..." autocomplete="off">
         <button class="btn btn-primary" id="btn-copilot-send" style="padding:0 16px;">
           ➤
         </button>
       </div>
       <div style="font-size:10.5px; color:var(--text-muted); margin-top:8px; text-align:center;">
-        Powered by High-Speed SSE Streaming & Local Privacy Engine
+        Shivi Autonomous Action Engine • Live Local RAG & SMTP Gateway
       </div>
     </div>
   </aside>
@@ -1701,9 +1745,9 @@
   <div id="toast-container"></div>
 
   <!-- Client Application Scripts -->
-  <script src="/js/api.js?v=2.4.7"></script>
-  <script src="/js/charts.js?v=2.4.7"></script>
-  <script src="/js/tour.js?v=2.4.7"></script>
-  <script src="/js/app.js?v=2.4.7"></script>
+  <script src="/js/api.js?v=3.0.0"></script>
+  <script src="/js/charts.js?v=3.0.0"></script>
+  <script src="/js/tour.js?v=3.0.0"></script>
+  <script src="/js/app.js?v=3.0.0"></script>
 </body>
 </html>
