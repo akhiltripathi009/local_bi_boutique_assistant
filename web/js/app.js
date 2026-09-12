@@ -1917,9 +1917,12 @@ const App = {
       // Populate Model Selector in Drawer
       const mSel = document.getElementById('copilot-model-select');
       if (mSel) {
-        mSel.innerHTML = mRes.models.map(m => `
-          <option value="${m}" ${m === this.state.activeModel ? 'selected' : ''}>🦙 ${m}</option>
-        `).join('');
+        mSel.innerHTML = mRes.models.map(m => {
+          const isGemini = m.toLowerCase().includes('gemini');
+          const icon = isGemini ? '✨' : '🦙';
+          const providerTag = isGemini ? ' (Google AI Studio)' : ' (Local Ollama)';
+          return `<option value="${m}" ${m === this.state.activeModel ? 'selected' : ''}>${icon} ${m}${providerTag}</option>`;
+        }).join('');
         mSel.addEventListener('change', (e) => {
           this.state.activeModel = e.target.value;
         });

@@ -15,9 +15,9 @@ logger = setup_logging("app_premium")
 # Import modular enterprise dependencies from src package
 from src.data.db_manager import DatabaseManager
 from src.simulation.engine import SimulationEngine
-from src.ai.ollama_client import (
-    LocalOllamaBoutiqueAnalyst, PERSONAS, PRESET_PROMPT_CHIPS, COPILOT_FAQS,
-    generate_executive_audit_commentary
+from src.ai import (
+    get_boutique_analyst, GoogleGeminiBoutiqueAnalyst, LocalOllamaBoutiqueAnalyst,
+    PERSONAS, PRESET_PROMPT_CHIPS, COPILOT_FAQS, generate_executive_audit_commentary
 )
 
 # Load the comprehensive 20-product array configuration modules
@@ -44,19 +44,18 @@ sim = SimulationEngine(CATALOG, db)
 shivi_agent = ShiviDeepAgent(db)
 
 
-def init_ollama():
+def init_analyst(model=None):
     """
-    Initializes the local AI analyst instance.
-    Uses llama3.2:3b model by default for the premium dashboard.
+    Initializes the Boutique AI analyst instance (Google AI Studio Gemini or Local Ollama).
     """
     try:
-        return LocalOllamaBoutiqueAnalyst(model_name="llama3.2:3b")
+        return get_boutique_analyst(model)
     except Exception as e:
-        logger.error(f"Failed to initialize Ollama premium analyst: {e}")
-        return None
+        logger.error(f"Failed to initialize boutique analyst: {e}")
+        return LocalOllamaBoutiqueAnalyst(model_name="llama3.2:3b")
 
 
-local_analyst = init_ollama()
+local_analyst = init_analyst()
 
 # 🔥 DYNAMIC SCHEMA SAFEGUARD: Initialize memory states straight from SQLite tables
 if "live_inventory" not in st.session_state:
@@ -1050,16 +1049,28 @@ elif view_selection == "🤖 AI Copilot Studio":
             st.rerun()
 
     with ctrl_col2:
-        available_models = local_analyst.get_available_models()
-        model_idx = available_models.index(st.session_state.copilot_model) if st.session_state.copilot_model in available_models else 0
-        chosen_model = st.selectbox(
-            "Local Ollama Model:",
+        gemini_analyst = GoogleGeminiBoutiqueAnalyst()
+        gemini_models = [f"✨ {m}" for m in gemini_analyst.get_available_models()]
+        ollama_models = [f"🦙 {m}" for m in local_analyst.get_available_models()]
+        available_models = gemini_models + [m for m in ollama_models if m not in gemini_models]
+
+        current_sel = st.session_state.copilot_model
+        match_idx = 0
+        for i, opt in enumerate(available_models):
+            if current_sel in opt:
+                match_idx = i
+                break
+
+        chosen_display = st.selectbox(
+            "AI Model (Cloud / Local):",
             options=available_models,
-            index=model_idx,
+            index=match_idx,
             key="studio_model_select"
         )
-        if chosen_model != st.session_state.copilot_model:
-            st.session_state.copilot_model = chosen_model
+        clean_model = chosen_display.replace("✨ ", "").replace("🦙 ", "").strip()
+        if clean_model != st.session_state.copilot_model:
+            st.session_state.copilot_model = clean_model
+            local_analyst = init_analyst(clean_model)
 
     with ctrl_col3:
         st.markdown("<div style='padding-top:28px;'><span style='background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; padding:6px 8px; border-radius:8px; font-size:11.5px; font-weight:600; white-space:nowrap;'>🟢 Active</span></div>", unsafe_allow_html=True)
@@ -1290,7 +1301,8 @@ elif view_selection == "🤖 AI Copilot Studio":
                             st.session_state.copilot_messages.append(msg_record)
                 else:
                     with st.chat_message("assistant"):
-                        stream_gen = local_analyst.stream_copilot_response(
+                        active_analyst = get_boutique_analyst(st.session_state.copilot_model)
+                        stream_gen = active_analyst.stream_copilot_response(
                             messages=st.session_state.copilot_messages,
                             model=st.session_state.copilot_model,
                             persona_key=st.session_state.copilot_persona,

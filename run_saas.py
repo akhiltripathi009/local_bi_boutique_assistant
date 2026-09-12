@@ -66,20 +66,23 @@ def main():
     except Exception as e:
         logger.warning(f"Ollama check skipped: {e}")
 
-    # 3. Schedule auto-opening browser in background thread
-    threading.Thread(target=open_browser, daemon=True).start()
+    # 3. Dynamic cloud port resolution (Google Cloud Run / Render inject $PORT)
+    port = int(os.getenv("PORT", 8000))
+    is_cloud = os.getenv("PORT") is not None
 
-    logger.info("Starting Mishika Atelier Commercial SaaS Server on http://localhost:8000 ...")
-    print("\n   Access URL: http://localhost:8000")
-    print("   API Docs:   http://localhost:8000/docs")
-    print("   Press CTRL+C to safely terminate the server.\n")
+    if not is_cloud:
+        threading.Thread(target=open_browser, daemon=True).start()
+
+    logger.info(f"Starting Mishika Atelier Commercial SaaS Server on port {port}...")
+    print(f"\n   Access URL: http://localhost:{port}")
+    print(f"   API Docs:   http://localhost:{port}/docs\n")
 
     uvicorn.run(
         "src.server.app:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
-        reload_dirs=["src", "web"],
+        port=port,
+        reload=not is_cloud,
+        reload_dirs=["src", "web"] if not is_cloud else None,
         log_level="info"
     )
 

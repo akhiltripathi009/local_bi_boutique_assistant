@@ -19,11 +19,14 @@ import logging
 
 from src.data.db_manager import DatabaseManager
 from src.server.routes.agent import get_agent
-from src.ai.ollama_client import (
+from src.ai import (
+    get_boutique_analyst,
+    GoogleGeminiBoutiqueAnalyst,
     LocalOllamaBoutiqueAnalyst,
+    GEMINI_MODELS,
     PERSONAS,
     COPILOT_FAQS,
-    PRESET_PROMPT_CHIPS
+    PRESET_PROMPT_CHIPS,
 )
 
 logger = logging.getLogger("copilot_routes")
@@ -31,14 +34,11 @@ logger = logging.getLogger("copilot_routes")
 router = APIRouter(prefix="/api/copilot", tags=["AI Copilot Studio"])
 
 
-def get_analyst() -> LocalOllamaBoutiqueAnalyst:
+def get_analyst(model_or_provider: Optional[str] = None):
     """
-    Dependency provider for LocalOllamaBoutiqueAnalyst.
-    
-    Returns:
-        LocalOllamaBoutiqueAnalyst: Configured Ollama bridge instance.
+    Dependency provider for Boutique BI Analyst (dynamically selects Google Gemini or Local Ollama).
     """
-    return LocalOllamaBoutiqueAnalyst()
+    return get_boutique_analyst(model_or_provider)
 
 
 def get_db() -> DatabaseManager:
@@ -53,13 +53,13 @@ def get_db() -> DatabaseManager:
 
 class StreamChatRequest(BaseModel):
     """
-    Request model for conversational token streaming with Ollama.
+    Request model for conversational token streaming with Ollama or Google AI Studio (Gemini).
     
     Why Required:
-    Validates conversational message history, target Ollama model tag, and executive persona style.
+    Validates conversational message history, target model tag, and executive persona style.
     """
     messages: List[Dict[str, Any]] = Field(..., description="Message history: [{'role': 'user', 'content': '...'}]")
-    model: Optional[str] = Field("llama3.2:3b", description="Installed Ollama model tag.")
+    model: Optional[str] = Field("gemini-1.5-flash", description="AI Model tag (e.g. gemini-1.5-flash, llama3.2:3b).")
     persona_key: str = Field("👔 Senior Merchandise Director", description="Persona prompt template key.")
 
 
@@ -74,23 +74,35 @@ class ChatActionRequest(BaseModel):
 @router.get("/models")
 def get_available_models() -> Dict[str, Any]:
     """
-    Inspects local Ollama server and lists installed neural language models.
+    Lists available neural models from both Google AI Studio (Gemini) and Local Ollama.
     
     Working:
-    - Queries the Ollama daemon `/api/tags` endpoint.
-    
-    Why Required:
-    - Allows users to switch between installed models (e.g. llama3.2:3b, mistral, qwen) in the UI.
-    
-    Returns:
-        Dict[str, Any]: List of installed model tags and active default.
+    - Queries Google AI Studio models (gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash).
+    - Queries local Ollama daemon for installed offline models (llama3.2:3b, mistral).
+    - Identifies if GEMINI_API_KEY is configured in the environment.
     """
-    analyst = get_analyst()
-    models = analyst.get_available_models()
+    gemini_analyst = GoogleGeminiBoutiqueAnalyst()
+    ollama_analyst = LocalOllamaBoutiqueAnalyst()
+
+    gemini_models = gemini_analyst.get_available_models()
+    ollama_models = ollama_analyst.get_available_models()
+    is_gemini_active = gemini_analyst.is_configured()
+
+    # Prioritize Gemini models first if configured, else prioritize local Ollama
+    if is_gemini_active:
+        all_models = gemini_models + [m for m in ollama_models if m not in gemini_models]
+        active_default = gemini_models[0] if gemini_models else "gemini-1.5-flash"
+    else:
+        all_models = gemini_models + [m for m in ollama_models if m not in gemini_models]
+        active_default = ollama_models[0] if ollama_models else "gemini-1.5-flash"
+
     return {
         "success": True,
-        "models": models,
-        "active_default": models[0] if models else "llama3.2:3b"
+        "models": all_models,
+        "gemini_models": gemini_models,
+        "ollama_models": ollama_models,
+        "gemini_configured": is_gemini_active,
+        "active_default": active_default
     }
 
 
@@ -240,10 +252,10 @@ def stream_copilot_chat(req: StreamChatRequest):
             }
         )
 
-    # 2. Standard Ollama RAG streaming for conversational/advisory inquiries
-    analyst = get_analyst()
+    # 2. Dynamic AI RAG streaming (Google AI Studio Gemini or Local Ollama)
+    analyst = get_analyst(req.model)
     live_ctx = analyst.build_live_boutique_context(db)
-    # Sanitize message payload to role and string content for Ollama
+    # Sanitize message payload to role and string content
     clean_messages = [{"role": str(m.get("role", "user")), "content": str(m.get("content", ""))} for m in req.messages]
 
     def sse_event_stream():
