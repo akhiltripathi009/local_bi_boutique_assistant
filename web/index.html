@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
   <!-- Luxury Atelier Design System -->
-  <link rel="stylesheet" href="/css/style.css?v=2.2.0">
+  <link rel="stylesheet" href="/css/style.css?v=2.4.7">
 </head>
 <body>
 
@@ -90,7 +90,10 @@
         ⚡ Live Shop Operations
       </button>
       <button class="nav-tab-btn" data-tab="tab-inventory">
-        📦 Inventory & Warehouse
+        ⚙️ Inventory & Circuit Controls
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-reports">
+        📄 Executive PDF Reports
       </button>
       <button class="nav-tab-btn" data-tab="tab-crm">
         👑 VIP Client CRM
@@ -110,30 +113,60 @@
          TAB 1: EXECUTIVE DASHBOARD
          ========================================== -->
     <section id="tab-dashboard" class="tab-content active">
+      <!-- Executive Timeframe Horizon Switchboard -->
+      <div class="dash-timeframe-container">
+        <div class="dash-timeframe-info">
+          <div class="dash-timeframe-badge">⚡ Live Executive BI Horizon</div>
+          <div class="dash-timeframe-sub" id="dash-timeframe-sub">Real-time dynamic sales aggregation: Daily (Past 24 Hours)</div>
+        </div>
+        <div class="dash-timeframe-pills" id="dash-timeframe-pills">
+          <button type="button" class="dash-timeframe-btn" data-timeframe="hourly" onclick="App.onDashboardTimeframeSelected('hourly')">
+            <span class="tf-icon">⏱️</span>
+            <span class="tf-label">Hourly</span>
+            <span class="tf-tag">Past 1h</span>
+          </button>
+          <button type="button" class="dash-timeframe-btn active" data-timeframe="daily" onclick="App.onDashboardTimeframeSelected('daily')">
+            <span class="tf-icon">🌅</span>
+            <span class="tf-label">Daily</span>
+            <span class="tf-tag">Past 24h</span>
+          </button>
+          <button type="button" class="dash-timeframe-btn" data-timeframe="monthly" onclick="App.onDashboardTimeframeSelected('monthly')">
+            <span class="tf-icon">📆</span>
+            <span class="tf-label">Monthly</span>
+            <span class="tf-tag">Past 30d</span>
+          </button>
+          <button type="button" class="dash-timeframe-btn" data-timeframe="yearly" onclick="App.onDashboardTimeframeSelected('yearly')">
+            <span class="tf-icon">🏛️</span>
+            <span class="tf-label">Annual</span>
+            <span class="tf-tag">Yearly</span>
+          </button>
+        </div>
+      </div>
+
       <!-- KPI Cards Grid -->
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">Gross Net Revenue <span>💰</span></div>
           <div class="kpi-value" id="kpi-revenue">$0.00</div>
-          <div class="kpi-subtext" style="color:var(--emerald);">▲ Real-time POS velocity</div>
+          <div class="kpi-subtext" id="kpi-revenue-sub" style="color:var(--emerald);">▲ Real-time POS velocity</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-label">Atelier Gross Profit <span>💎</span></div>
           <div class="kpi-value" id="kpi-profit">$0.00</div>
-          <div class="kpi-subtext" style="color:var(--emerald);">Post-COGS earnings</div>
+          <div class="kpi-subtext" id="kpi-profit-sub" style="color:var(--emerald);">Post-COGS earnings</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-label">Realized Margin <span>📈</span></div>
           <div class="kpi-value" id="kpi-margin">0.0%</div>
-          <div class="kpi-subtext">Target threshold: 60%+</div>
+          <div class="kpi-subtext" id="kpi-margin-sub">Target threshold: 60%+</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-label">Sell-Through Rate <span>🎯</span></div>
           <div class="kpi-value" id="kpi-str">0.0%</div>
-          <div class="kpi-subtext">Velocity / Beginning inventory</div>
+          <div class="kpi-subtext" id="kpi-str-sub">Velocity / Beginning inventory</div>
         </div>
 
         <div class="kpi-card">
@@ -153,16 +186,16 @@
       <div class="charts-grid">
         <div class="glass-card">
           <div class="chart-header">
-            <h3 class="chart-title">Hourly Sales Velocity ($)</h3>
-            <span style="font-size:12px; color:var(--text-muted);">Intraday Real-Time Progression</span>
+            <h3 class="chart-title" id="dash-velocity-chart-title">Hourly Sales Velocity ($)</h3>
+            <span id="dash-velocity-chart-sub" style="font-size:12px; color:var(--text-muted);">Intraday Real-Time Progression</span>
           </div>
           <div id="chart-hourly-sales" style="min-height: 280px;"></div>
         </div>
 
         <div class="glass-card">
           <div class="chart-header">
-            <h3 class="chart-title">Category Revenue Contribution</h3>
-            <span style="font-size:12px; color:var(--text-muted);">By Collection</span>
+            <h3 class="chart-title" id="dash-category-chart-title">Category Revenue Contribution</h3>
+            <span id="dash-category-chart-sub" style="font-size:12px; color:var(--text-muted);">By Collection (Past 24 Hours)</span>
           </div>
           <div id="chart-category-performance" style="min-height: 280px;"></div>
         </div>
@@ -172,10 +205,10 @@
       <div class="glass-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
           <div>
-            <h3 class="chart-title">Best-Selling Couture Pieces</h3>
-            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Top styles ranked by net generated revenue</div>
+            <h3 class="chart-title" id="dash-top-styles-title">Best-Selling Couture Pieces</h3>
+            <div id="dash-top-styles-sub" style="font-size:12px; color:var(--text-muted); margin-top:2px;">Top styles ranked by net generated revenue (Daily - Past 24h)</div>
           </div>
-          <span class="badge-gold">Live Atelier Ranking</span>
+          <span class="badge-gold" id="dash-top-styles-badge">Live Atelier Ranking (24h)</span>
         </div>
         <div class="data-table-container">
           <table class="luxury-table">
@@ -191,6 +224,230 @@
               <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Loading sales velocity...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- 2x2 Operational Diagnostics Suite -->
+      <div class="diag-grid-2x2">
+        <!-- 1. Product Sales Velocity -->
+        <div class="diag-card">
+          <div class="diag-header">
+            <div class="diag-title"><span>📈</span> Product Sales Velocity (STR %)</div>
+            <span class="badge-emerald">Top Moving Lines</span>
+          </div>
+          <div id="diag-velocity-list" class="velocity-bar-list">
+            <div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Loading sales velocity...</div>
+          </div>
+        </div>
+
+        <!-- 2. Market Competitor Price Benchmark -->
+        <div class="diag-card">
+          <div class="diag-header">
+            <div class="diag-title"><span>🏬</span> Competitor Price Index (CPI)</div>
+            <span class="badge-gold">100 = Parity</span>
+          </div>
+          <div id="diag-cpi-list" class="velocity-bar-list">
+            <div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Loading competitor benchmarks...</div>
+          </div>
+        </div>
+
+        <!-- 3. Customer Category Sentiment -->
+        <div class="diag-card">
+          <div class="diag-header">
+            <div class="diag-title"><span>🧵</span> Customer Category Sentiment</div>
+            <span class="badge-indigo">Shopper Reviews</span>
+          </div>
+          <div id="diag-sentiment-list">
+            <div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Loading category sentiment...</div>
+          </div>
+        </div>
+
+        <!-- 4. Critical Size Curve Alerts -->
+        <div class="diag-card">
+          <div class="diag-header">
+            <div class="diag-title"><span>⚠️</span> Critical Size Curve Outages</div>
+            <span id="diag-broken-badge" class="badge-status-standby">Scanning</span>
+          </div>
+          <div id="diag-broken-list">
+            <div style="text-align:center; padding:12px; color:var(--text-muted); font-size:12px;">Scanning size curves...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Competitor Intelligence & What-If Repricing Suite -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <h3 style="font-family:var(--font-serif); font-size:19px; color:var(--gold-light); margin:0;">🏬 Competitor Intelligence & "What-If" Dynamic Repricing Suite</h3>
+              <span class="badge-gold">Tri-Brand Luxury Benchmarks Active</span>
+            </div>
+            <p style="font-size:12.5px; color:var(--text-secondary); margin-top:4px;">
+              Real-time market price parity against luxury rivals (Velvet & Vine), contemporary peers (Avenue Apparel), and budget baselines (Minimalist Thread Co.).
+            </p>
+          </div>
+        </div>
+
+        <!-- 4 Executive KPI Metrics Cards -->
+        <div class="cpi-kpi-strip">
+          <div class="kpi-card" style="border-left: 4px solid var(--indigo);">
+            <div class="kpi-label">Store Price Index (CPI)</div>
+            <div class="kpi-value" id="cpi-metric-store">100.0%</div>
+            <div class="kpi-subtext" id="cpi-metric-position" style="color:var(--indigo);">Market Aligned</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid var(--amber);">
+            <div class="kpi-label">Underpriced Hazards</div>
+            <div class="kpi-value" id="cpi-metric-underpriced" style="color:var(--amber);">0 Styles</div>
+            <div class="kpi-subtext">Index &lt; 92% (Margin Leakage)</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+            <div class="kpi-label">Premium Positioned</div>
+            <div class="kpi-value" id="cpi-metric-premium" style="color:#a78bfa;">0 Styles</div>
+            <div class="kpi-subtext">Index &gt; 112% (Luxury Premium)</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid var(--emerald);">
+            <div class="kpi-label">Unearned Margin Upside</div>
+            <div class="kpi-value" id="cpi-metric-upside" style="color:var(--emerald);">+$0.00/mo</div>
+            <div class="kpi-subtext">Safe Repricing Potential</div>
+          </div>
+        </div>
+
+        <!-- Interactive Subtabs for Matrix & Simulator -->
+        <div class="subtabs-bar">
+          <button class="subtab-btn active" data-subtab="subtab-competitor-matrix" onclick="App.switchDashboardSubtab('subtab-competitor-matrix')">
+            📊 Multi-Competitor Market Matrix
+          </button>
+          <button class="subtab-btn" data-subtab="subtab-elasticity-sim" onclick="App.switchDashboardSubtab('subtab-elasticity-sim')">
+            ⚡ 'What-If' Price Elasticity & Repricing Simulator
+          </button>
+        </div>
+
+        <!-- Subtab 1: Market Matrix -->
+        <div id="subtab-competitor-matrix" class="dashboard-subtab-pane active">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size:12px; font-weight:600; color:var(--text-secondary);">Filter Category:</label>
+              <select id="comp-category-filter" class="form-control" style="width:180px;" onchange="App.onCompetitorCategoryFilter()">
+                <option value="All Categories">All Categories</option>
+              </select>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted);">
+              Benchmarked against <b>Velvet & Vine</b> (+25%), <b>Avenue Apparel</b> (+2%), <b>Minimalist</b> (-22%)
+            </div>
+          </div>
+
+          <div class="data-table-container">
+            <table class="luxury-table">
+              <thead>
+                <tr>
+                  <th>Style Name</th>
+                  <th>Category</th>
+                  <th>Our Price ($)</th>
+                  <th>Margin %</th>
+                  <th>Velvet & Vine</th>
+                  <th>Avenue App</th>
+                  <th>Minimalist</th>
+                  <th>Market Avg</th>
+                  <th>Price Index</th>
+                  <th>Position</th>
+                  <th>Prescribed Action</th>
+                </tr>
+              </thead>
+              <tbody id="competitor-parity-tbody">
+                <tr><td colspan="11" style="text-align:center; color:var(--text-muted);">Loading competitor parity data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subtab 2: Elasticity Simulator -->
+        <div id="subtab-elasticity-sim" class="dashboard-subtab-pane" style="display:none;">
+          <p style="font-size:12.5px; color:var(--text-secondary); margin-bottom:16px;">
+            Simulate the impact of retail price adjustments using category price elasticity coefficients ($E$). Test price increases on underpriced luxury styles to model projected unit demand shifts and monthly gross profit gains before applying live changes.
+          </p>
+
+          <div class="elasticity-container">
+            <!-- Left: Style Selector & Cost Basis Context -->
+            <div class="elasticity-config-box">
+              <label class="form-label" style="font-weight:700;">Select Merchandise Style to Reprice</label>
+              <select id="sim-product-select" class="form-control" style="margin-bottom:14px;" onchange="App.onSimProductSelected()">
+                <option value="">Loading catalog styles...</option>
+              </select>
+
+              <div id="sim-product-context" style="display:flex; flex-direction:column; gap:8px; font-size:12.5px;">
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-secondary);">Current Retail Price:</span>
+                  <span id="sim-ctx-price" style="font-weight:700; color:var(--text-primary);">$0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-secondary);">Wholesale Cost:</span>
+                  <span id="sim-ctx-cost" style="font-weight:600; color:var(--emerald);">$0.00 (0.0%)</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-secondary);">Velvet & Vine (Lux):</span>
+                  <span id="sim-ctx-velvet" style="font-weight:600; color:#a78bfa;">$0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-secondary);">Avenue Apparel (Mid):</span>
+                  <span id="sim-ctx-avenue" style="font-weight:600; color:var(--amber);">$0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="color:var(--text-secondary);">Minimalist (Disc):</span>
+                  <span id="sim-ctx-mini" style="font-weight:600; color:var(--emerald);">$0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Interactive Slider & Dynamic Live Projections -->
+            <div>
+              <div style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <label class="form-label" style="font-weight:700; margin:0;">
+                    Proposed Retail Price ($ USD):
+                  </label>
+                  <span id="sim-slider-val-badge" style="font-size:16px; font-weight:800; color:var(--gold-light);">$0.00</span>
+                </div>
+                <input type="range" id="sim-price-slider" min="50" max="400" step="1" value="100" style="width:100%; accent-color:var(--gold-primary); cursor:pointer;" oninput="App.onSimSliderChange(this.value)">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-top:4px;">
+                  <span id="sim-slider-min">$50</span>
+                  <span>Category Elasticity Adjusted</span>
+                  <span id="sim-slider-max">$400</span>
+                </div>
+              </div>
+
+              <!-- 4 Dynamic Projection Cards -->
+              <div class="projection-cards-grid">
+                <div class="projection-card">
+                  <div class="projection-label">Price Adjustment</div>
+                  <div class="projection-value" id="sim-proj-price">$0.00</div>
+                  <div class="projection-sub" id="sim-proj-price-sub" style="color:var(--emerald);">+$0.00 / unit</div>
+                </div>
+
+                <div class="projection-card">
+                  <div class="projection-label">Demand Impact</div>
+                  <div class="projection-value" id="sim-proj-demand">0 units</div>
+                  <div class="projection-sub" id="sim-proj-demand-sub" style="color:var(--text-secondary);">Baseline: 40 units/mo</div>
+                </div>
+
+                <div class="projection-card">
+                  <div class="projection-label">Monthly Gross Profit</div>
+                  <div class="projection-value" id="sim-proj-profit">$0.00</div>
+                  <div class="projection-sub" id="sim-proj-profit-sub" style="color:var(--emerald);">+$0.00 Net Profit / mo</div>
+                </div>
+
+                <div class="projection-card">
+                  <div class="projection-label">New Market CPI</div>
+                  <div class="projection-value" id="sim-proj-cpi">100.0%</div>
+                  <div class="projection-sub" id="sim-proj-cpi-sub" style="color:var(--indigo);">Market Aligned</div>
+                </div>
+              </div>
+
+              <!-- Apply Repricing CTA Button -->
+              <button class="btn btn-primary" id="btn-apply-repricing" style="width:100%; padding:12px; font-size:14px; font-weight:700;" onclick="App.applyCurrentRepricing()">
+                ⚡ Apply Repricing to Catalog
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -210,8 +467,9 @@
             Discrete event simulation of physical floor transactions, customer VIP attribution, and warehouse truck deliveries at 60 FPS.
           </p>
         </div>
-        <div style="font-size:12px; color:var(--text-muted); background:rgba(15,23,42,0.6); border:1px solid var(--border-subtle); padding:6px 12px; border-radius:var(--radius-sm);">
-          <span>⏱️ <b>Simulation Clock:</b> </span><span id="live-ops-clock">Standby</span>
+        <div class="simulation-clock-badge">
+          <span class="simulation-clock-label">⏱️ <span>Simulation Clock:</span></span>
+          <span id="live-ops-clock" class="simulation-clock-value">Standby</span>
         </div>
       </div>
 
@@ -353,27 +611,103 @@
     </section>
 
     <!-- ==========================================
-         TAB 2: INVENTORY & WAREHOUSE
+         TAB 2: INVENTORY & CIRCUIT CONTROLS (SEGMENT 3)
          ========================================== -->
     <section id="tab-inventory" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
         <div>
-          <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">Atelier Inventory & Warehouse Reserve</h2>
-          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Multi-location stock balance between Flagship Boutique Floor and Central Reserve Depot.</p>
-        </div>
-        <div style="display:flex; gap:16px; align-items:center;">
-          <div style="background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:var(--radius-md); padding:8px 16px; text-align:right;">
-            <div style="font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Floor Total</div>
-            <div id="inv-summary-shop" style="font-size:17px; font-weight:800; color:var(--gold-light);">0 units</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">⚙️ Inventory & Store Circuit Controls Switchboard</h2>
+            <span class="badge-gold">Segment 3 Active</span>
           </div>
-          <div style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); border-radius:var(--radius-md); padding:8px 16px; text-align:right;">
-            <div style="font-size:10.5px; text-transform:uppercase; color:var(--text-muted);">Depot Total</div>
-            <div id="inv-summary-wh" style="font-size:17px; font-weight:800; color:var(--indigo);">0 units</div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+            Manage operational safeguards, toggle customer checkout, block supplier replenishment, and inspect granular size-matrix balances per style.
+          </p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <div style="background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Floor Total</div>
+            <div id="inv-summary-shop" style="font-size:16px; font-weight:800; color:var(--gold-light);">0 units</div>
+          </div>
+          <div style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Depot Total</div>
+            <div id="inv-summary-wh" style="font-size:16px; font-weight:800; color:var(--indigo);">0 units</div>
+          </div>
+          <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
+            <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Low Stock (≤15)</div>
+            <div id="circuit-low-count-badge" style="font-size:16px; font-weight:800; color:#ef4444;">0 Styles</div>
           </div>
         </div>
       </div>
 
+      <!-- Control Panel Quick-Start Guide Callout -->
+      <div style="background:rgba(212,175,55,0.06); border-left:4px solid var(--gold-primary); padding:10px 16px; border-radius:8px; margin-bottom:16px;">
+        <span style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">
+          <b>💡 Master Circuit Switchboard Guide:</b> Turn off <b>Allow Sales</b> to freeze checkout for VIP reservations or photoshoots without catalog removal.
+          Turn off <b>Allow Restock</b> to prevent supplier delivery trucks from replenishing designated lines. The discrete simulation engine enforcers check these switches on every cycle.
+        </span>
+      </div>
+
+      <!-- Store Manager Filter Toolbar (Low Stock Isolator + Category Filter Pills) -->
+      <div class="circuit-filter-toolbar">
+        <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label class="luxury-switch">
+              <input type="checkbox" id="circuit-low-stock-toggle" onchange="App.onCircuitFilterChange()">
+              <span class="luxury-switch-slider"></span>
+            </label>
+            <span style="font-size:12.5px; font-weight:700; color:var(--text-primary); cursor:pointer;" onclick="document.getElementById('circuit-low-stock-toggle').click()">
+              ⚠️ Show Low Stock Only (≤ 15 Units)
+            </span>
+          </div>
+        </div>
+
+        <!-- Category Filter Pills Bar -->
+        <div id="circuit-category-pills" class="category-pills-bar">
+          <button class="cat-pill-btn active" data-cat="All Categories" onclick="App.onCircuitCategoryClick('All Categories')">All Categories</button>
+        </div>
+      </div>
+
+      <!-- Master Circuit Switchboard & Size Matrix Table -->
+      <div class="glass-card" style="margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h3 class="chart-title" style="margin:0;">Master Circuit Controls Switchboard</h3>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Real-time checkout, restock, capacity boundaries, and size-curve integrity</div>
+          </div>
+          <span class="badge-emerald" id="circuit-status-indicator">⚡ Switches Live & Active</span>
+        </div>
+
+        <div class="data-table-container">
+          <table class="luxury-table">
+            <thead>
+              <tr>
+                <th>Style / Code</th>
+                <th>Category</th>
+                <th>Floor / Depot</th>
+                <th style="text-align:center;">Allow Sales</th>
+                <th style="text-align:center;">Allow Restock</th>
+                <th style="text-align:center;">Max Cap</th>
+                <th>Size Matrix Variant Breakdown (S / M / L / XL)</th>
+              </tr>
+            </thead>
+            <tbody id="circuit-controls-tbody">
+              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading circuit controls...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Dual-Location Inter-Store Transfers & Reserve Depot -->
       <div class="glass-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h3 class="chart-title" style="margin:0;">Dual-Location Catalog & Backroom Reserve</h3>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Execute atomic stock transfers between Flagship floor racks and Central Depot reserve</div>
+          </div>
+          <span class="badge-indigo">Atomic Transfer Ledger</span>
+        </div>
+
         <div class="data-table-container">
           <table class="luxury-table">
             <thead>
@@ -919,6 +1253,195 @@
       </div>
     </section>
 
+    <!-- ==========================================
+         TAB 4: EXECUTIVE PDF AUDIT REPORTS (SEGMENT 4)
+         ========================================== -->
+    <section id="tab-reports" class="tab-content">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">📄 Executive Boardroom PDF Reports</h2>
+            <span class="badge-gold">Segment 4 Active</span>
+          </div>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+            Generate formal boardroom-ready PDF audit documents of sales revenues, gross margins, and inbound logistics directly from SQLite ledgers.
+          </p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="badge-emerald" id="report-engine-status">ReportLab Platypus Active</span>
+        </div>
+      </div>
+
+      <!-- Enterprise Reporting Hub Quick-Start Callout -->
+      <div style="background:rgba(16,185,129,0.06); border-left:4px solid var(--emerald); padding:10px 16px; border-radius:8px; margin-bottom:20px;">
+        <span style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">
+          <b>💡 Enterprise Reporting Hub:</b> Select an audit timeframe below (Daily, Weekly, Monthly, or Complete All-Time).
+          The system queries your SQLite transaction database, aggregates financial margins, and creates an official boardroom PDF document with letterhead branding.
+        </span>
+      </div>
+
+      <!-- Timeframe Horizon Scope Selector -->
+      <div class="report-scope-bar">
+        <div class="report-scope-pill active" data-scope="daily" onclick="App.onReportScopeSelected('daily')">
+          <div class="report-scope-title">🌅 Daily Audit</div>
+          <div class="report-scope-desc">Latest operating 24h cycle & drawer reconciliation</div>
+        </div>
+        <div class="report-scope-pill" data-scope="weekly" onclick="App.onReportScopeSelected('weekly')">
+          <div class="report-scope-title">📅 Weekly Audit</div>
+          <div class="report-scope-desc">Trailing 7-day velocity & restock replenishment</div>
+        </div>
+        <div class="report-scope-pill" data-scope="monthly" onclick="App.onReportScopeSelected('monthly')">
+          <div class="report-scope-title">📆 Monthly Audit</div>
+          <div class="report-scope-desc">Trailing 30-day gross profit & margin scorecard</div>
+        </div>
+        <div class="report-scope-pill" data-scope="complete" onclick="App.onReportScopeSelected('complete')">
+          <div class="report-scope-title">🏛️ Complete Audit</div>
+          <div class="report-scope-desc">All-time lifetime sales and procurement ledgers</div>
+        </div>
+      </div>
+
+      <!-- Interactive Live Executive PDF Document Viewer -->
+      <div class="glass-card" style="margin-bottom:24px; padding:0; overflow:hidden; border: 1px solid rgba(212,175,55,0.3);">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; background:rgba(18,22,32,0.9); border-bottom:1px solid rgba(212,175,55,0.2); flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <span style="font-size:22px;">📑</span>
+            <div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h3 class="chart-title" style="margin:0; font-size:15.5px;">Live Boardroom PDF Document Viewer</h3>
+                <span class="badge-emerald" id="report-doc-filename">MishikaBoutique_Daily_Audit.pdf</span>
+              </div>
+              <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">
+                Official ReportLab Platypus Engine • Vector typography, corporate letterhead, financial reconciliation & pagination
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-secondary" style="font-size:12px; padding:5px 12px;" onclick="App.refreshReportPdf()" title="Recompile live PDF from SQLite ledgers">
+              🔄 Recompile
+            </button>
+            <button class="btn btn-secondary" style="font-size:12px; padding:5px 12px;" onclick="App.printReportPdf()" title="Print this boardroom audit document">
+              🖨️ Print
+            </button>
+            <button class="btn btn-secondary" style="font-size:12px; padding:5px 12px;" onclick="App.openReportPdfNewTab()" title="Open PDF in a full new tab">
+              ↗️ Full Window
+            </button>
+            <button class="btn btn-primary" style="font-size:12px; padding:6px 16px; font-weight:700;" onclick="App.downloadEnterpriseReport()" title="Download PDF attachment">
+              📥 Download PDF
+            </button>
+          </div>
+        </div>
+
+        <div style="position:relative; width:100%; height:760px; background:#0f131d;">
+          <iframe id="report-pdf-iframe" class="report-pdf-frame" src="/api/reports/enterprise-pdf?scope=daily" style="width:100%; height:100%; border:none; display:block;" title="Executive Boardroom PDF Report Document"></iframe>
+        </div>
+      </div>
+
+      <!-- Live On-Screen Scorecard Preview -->
+      <div class="glass-card" style="margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h3 class="chart-title" style="margin:0;">📊 Executive Financial Scorecard Preview</h3>
+            <div id="report-period-title" style="font-size:12px; color:var(--text-muted); margin-top:2px;">Compiling report metrics...</div>
+          </div>
+          <span class="badge-gold" id="report-scope-badge">DAILY OPERATIONS</span>
+        </div>
+
+        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); margin-bottom:16px;">
+          <div class="kpi-card" style="border-left: 4px solid var(--emerald);">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-value" id="rep-kpi-rev" style="color:var(--emerald);">$0.00</div>
+            <div class="kpi-subtext" id="rep-kpi-sales">0 Sales Transactions</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid #3b82f6;">
+            <div class="kpi-label">Cost of Goods (COGS)</div>
+            <div class="kpi-value" id="rep-kpi-cogs" style="color:#60a5fa;">$0.00</div>
+            <div class="kpi-subtext" id="rep-kpi-units">0 Units Sold</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid var(--gold-primary);">
+            <div class="kpi-label">Net Gross Profit</div>
+            <div class="kpi-value" id="rep-kpi-profit" style="color:var(--gold-light);">$0.00</div>
+            <div class="kpi-subtext" id="rep-kpi-margin">Margin: 0.0%</div>
+          </div>
+          <div class="kpi-card" style="border-left: 4px solid var(--amber);">
+            <div class="kpi-label">Procurement Inbound</div>
+            <div class="kpi-value" id="rep-kpi-restock" style="color:var(--amber);">+0 Units</div>
+            <div class="kpi-subtext" id="rep-kpi-spend">Spend: $0.00</div>
+          </div>
+        </div>
+
+        <!-- Detailed Preview Subtabs -->
+        <div class="subtabs-bar">
+          <button class="subtab-btn active" data-subtab="rep-subtab-merch" onclick="App.switchReportSubtab('rep-subtab-merch')">
+            🏆 Top Selling Merchandise Preview
+          </button>
+          <button class="subtab-btn" data-subtab="rep-subtab-restock" onclick="App.switchReportSubtab('rep-subtab-restock')">
+            🚚 Inbound Supply Deliveries Preview
+          </button>
+        </div>
+
+        <div id="rep-subtab-merch" class="report-subtab-pane active">
+          <div class="data-table-container">
+            <table class="luxury-table">
+              <thead>
+                <tr>
+                  <th>Style Code</th>
+                  <th>Product Style Name</th>
+                  <th>Units Sold</th>
+                  <th>Gross Revenue ($)</th>
+                  <th>Gross Profit ($)</th>
+                  <th>Margin (%)</th>
+                </tr>
+              </thead>
+              <tbody id="report-merch-tbody">
+                <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Loading merchandise preview...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="rep-subtab-restock" class="report-subtab-pane" style="display:none;">
+          <div class="data-table-container">
+            <table class="luxury-table">
+              <thead>
+                <tr>
+                  <th>Arrival Time</th>
+                  <th>Product Style Name</th>
+                  <th>Units Restocked</th>
+                  <th>Procurement Cost ($)</th>
+                </tr>
+              </thead>
+              <tbody id="report-restock-tbody">
+                <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">Loading restock deliveries preview...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- One-Click Export Action Hub -->
+      <div class="report-action-box">
+        <div>
+          <h4 style="font-family:var(--font-serif); font-size:17px; color:var(--gold-light); margin:0 0 4px 0;">📥 Ready to Export Official Boardroom Audit</h4>
+          <p style="font-size:12.5px; color:var(--text-secondary); margin:0;">
+            Includes official corporate letterhead, executive scorecard, audited sales ledgers, supply chain restocks, and two-pass "Page X of Y" pagination.
+          </p>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="btn-download-enterprise-pdf" style="padding:12px 24px; font-size:14px; font-weight:700;" onclick="App.downloadEnterpriseReport()">
+            📑 Download Enterprise PDF Report
+          </button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="window.open(API.getOpeningPdfUrl(), '_blank')">
+            🌅 Morning Opening PDF
+          </button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="window.open(API.getClosingPdfUrl(), '_blank')">
+            🌆 Evening Closing PDF
+          </button>
+          <button class="btn btn-secondary" style="font-size:12px;" onclick="window.open(API.getPresentationPptxUrl(), '_blank')">
+            📊 Executive Deck (.pptx)
+          </button>
+        </div>
+      </div>
+    </section>
 
     <!-- ==========================================
          TAB 6: DATA SCIENCE SANDBOX
@@ -1178,9 +1701,9 @@
   <div id="toast-container"></div>
 
   <!-- Client Application Scripts -->
-  <script src="/js/api.js?v=2.2.0"></script>
-  <script src="/js/charts.js?v=2.2.0"></script>
-  <script src="/js/tour.js?v=2.2.0"></script>
-  <script src="/js/app.js?v=2.2.0"></script>
+  <script src="/js/api.js?v=2.4.7"></script>
+  <script src="/js/charts.js?v=2.4.7"></script>
+  <script src="/js/tour.js?v=2.4.7"></script>
+  <script src="/js/app.js?v=2.4.7"></script>
 </body>
 </html>

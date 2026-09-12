@@ -37,12 +37,27 @@ const API = {
   getHealth: () => API.request('/api/health'),
 
   // Dashboard
-  getDashboardStats: () => API.request('/api/dashboard/stats'),
-  getDashboardCharts: () => API.request('/api/dashboard/charts'),
+  getDashboardStats: (timeframe = 'daily') => API.request(`/api/dashboard/stats?timeframe=${encodeURIComponent(timeframe || 'daily')}`),
+  getDashboardCharts: (timeframe = 'daily') => API.request(`/api/dashboard/charts?timeframe=${encodeURIComponent(timeframe || 'daily')}`),
   getDashboardAlerts: () => API.request('/api/dashboard/alerts'),
+  getCompetitorIntelligence: () => API.request('/api/dashboard/competitor-intelligence'),
+  getDashboardDiagnostics: () => API.request('/api/dashboard/diagnostics'),
+  simulateElasticity: (productId, newPrice, baseVolume = 40) => API.request('/api/dashboard/simulate-elasticity', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: productId, new_price: newPrice, base_volume: baseVolume })
+  }),
+  applyReprice: (productId, newPrice) => API.request('/api/dashboard/reprice', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: productId, new_price: newPrice })
+  }),
 
-  // Inventory & Warehouse
+  // Inventory & Warehouse / Circuit Controls (Segment 3)
   getInventoryOverview: () => API.request('/api/inventory/overview'),
+  getCircuitControls: () => API.request('/api/inventory/controls'),
+  updateCircuitControl: (productId, key, value) => API.request('/api/inventory/controls/update', {
+    method: 'POST',
+    body: JSON.stringify({ product_id: productId, key, value })
+  }),
   transferStock: (payload) => API.request('/api/inventory/transfer', {
     method: 'POST',
     body: JSON.stringify(payload)
@@ -56,6 +71,13 @@ const API = {
     body: JSON.stringify(payload)
   }),
   getTransferHistory: () => API.request('/api/inventory/transfers'),
+
+  // Executive Reports (Segment 4)
+  getReportPreview: (scope = 'daily') => API.request(`/api/reports/preview?scope=${encodeURIComponent(scope)}`),
+  getEnterprisePdfUrl: (scope = 'daily', download = false) => `/api/reports/enterprise-pdf?scope=${encodeURIComponent(scope)}${download ? '&download=true' : ''}`,
+  getOpeningPdfUrl: (download = false) => `/api/reports/opening-pdf${download ? '?download=true' : ''}`,
+  getClosingPdfUrl: (download = false) => `/api/reports/closing-pdf${download ? '?download=true' : ''}`,
+  getPresentationPptxUrl: () => '/api/reports/presentation-pptx',
 
   // CRM
   getCustomers: (tier = '', search = '') => {

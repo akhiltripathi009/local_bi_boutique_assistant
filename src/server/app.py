@@ -102,5 +102,8 @@ def serve_spa():
     """Serves the main commercial luxury web application."""
     index_file = web_dir / "index.html"
     if index_file.exists():
-        return FileResponse(str(index_file))
+        return FileResponse(
+            str(index_file),
+            headers={"Cache-Control": "no-cache, must-revalidate"}
+        )
     return {"message": "Mishika Fashion Boutique API running. Frontend web/index.html is initializing."}

@@ -157,10 +157,12 @@ const BoutiqueTour = {
    * This completely eliminates browser stylesheet caching issues.
    */
   injectStyles() {
-    if (document.getElementById('boutique-tour-injected-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'boutique-tour-injected-styles';
+    let style = document.getElementById('boutique-tour-injected-styles');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'boutique-tour-injected-styles';
+      document.head.appendChild(style);
+    }
     style.textContent = `
       /* 1. Floating Tour Launcher */
       .fab-tour-launcher {
@@ -501,8 +503,304 @@ const BoutiqueTour = {
         box-shadow: 0 0 0 3px #d4af37, 0 0 32px rgba(212, 175, 55, 0.7) !important;
         transition: all 0.3s ease !important;
       }
+
+      /* =======================================================
+         LIGHT LUXURY THEME OVERRIDES (ANCESTOR & DIRECT CLASSES)
+         ======================================================= */
+      [data-theme="light"] .tour-backdrop,
+      .tour-backdrop.light-theme,
+      .tour-backdrop[data-theme="light"],
+      html[data-theme="light"] .tour-backdrop,
+      body[data-theme="light"] .tour-backdrop {
+        background: rgba(15, 23, 42, 0.55) !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
+      }
+
+      [data-theme="light"] .tour-card-compact,
+      .tour-card-compact.light-theme,
+      .tour-card-compact[data-theme="light"],
+      html[data-theme="light"] .tour-card-compact,
+      body[data-theme="light"] .tour-card-compact {
+        background: #ffffff !important;
+        border: 1px solid rgba(184, 134, 11, 0.45) !important;
+        box-shadow: 0 28px 72px rgba(15, 23, 42, 0.22), 0 0 36px rgba(184, 134, 11, 0.2) !important;
+        color: #0f172a !important;
+      }
+
+      [data-theme="light"] .tour-progress-bar-container,
+      .light-theme .tour-progress-bar-container,
+      .tour-card-compact.light-theme .tour-progress-bar-container,
+      .tour-card-compact[data-theme="light"] .tour-progress-bar-container {
+        background: #e2e8f0 !important;
+      }
+
+      [data-theme="light"] .tour-progress-bar,
+      .light-theme .tour-progress-bar,
+      .tour-card-compact.light-theme .tour-progress-bar,
+      .tour-card-compact[data-theme="light"] .tour-progress-bar {
+        background: linear-gradient(90deg, #b8860b, #d97706) !important;
+      }
+
+      [data-theme="light"] .tour-close-top-left,
+      .light-theme .tour-close-top-left,
+      .tour-card-compact.light-theme .tour-close-top-left,
+      .tour-card-compact[data-theme="light"] .tour-close-top-left {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #475569 !important;
+      }
+
+      [data-theme="light"] .tour-close-top-left:hover,
+      .light-theme .tour-close-top-left:hover,
+      .tour-card-compact.light-theme .tour-close-top-left:hover,
+      .tour-card-compact[data-theme="light"] .tour-close-top-left:hover {
+        color: #e11d48 !important;
+        background: rgba(225, 29, 72, 0.12) !important;
+        border-color: rgba(225, 29, 72, 0.35) !important;
+      }
+
+      [data-theme="light"] .tour-title-compact,
+      .light-theme .tour-title-compact,
+      .tour-card-compact.light-theme .tour-title-compact,
+      .tour-card-compact[data-theme="light"] .tour-title-compact {
+        color: #7c4a03 !important;
+      }
+
+      [data-theme="light"] .tour-badge-pill,
+      .light-theme .tour-badge-pill,
+      .tour-card-compact.light-theme .tour-badge-pill,
+      .tour-card-compact[data-theme="light"] .tour-badge-pill {
+        background: rgba(2, 132, 199, 0.12) !important;
+        color: #0369a1 !important;
+        border-color: rgba(2, 132, 199, 0.3) !important;
+      }
+
+      [data-theme="light"] .tour-badge-step,
+      .light-theme .tour-badge-step,
+      .tour-card-compact.light-theme .tour-badge-step,
+      .tour-card-compact[data-theme="light"] .tour-badge-step {
+        background: rgba(184, 134, 11, 0.14) !important;
+        color: #7c4a03 !important;
+        border-color: rgba(184, 134, 11, 0.35) !important;
+      }
+
+      [data-theme="light"] .tour-summary-card,
+      .light-theme .tour-summary-card,
+      .tour-card-compact.light-theme .tour-summary-card,
+      .tour-card-compact[data-theme="light"] .tour-summary-card {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+      }
+
+      [data-theme="light"] .tour-summary-card:hover,
+      .light-theme .tour-summary-card:hover,
+      .tour-card-compact.light-theme .tour-summary-card:hover,
+      .tour-card-compact[data-theme="light"] .tour-summary-card:hover {
+        background: #ffffff !important;
+        border-color: rgba(184, 134, 11, 0.38) !important;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+      }
+
+      [data-theme="light"] .tour-summary-title,
+      .light-theme .tour-summary-title,
+      .tour-card-compact.light-theme .tour-summary-title,
+      .tour-card-compact[data-theme="light"] .tour-summary-title {
+        color: #0f172a !important;
+      }
+
+      [data-theme="light"] .tour-summary-text,
+      .light-theme .tour-summary-text,
+      .tour-card-compact.light-theme .tour-summary-text,
+      .tour-card-compact[data-theme="light"] .tour-summary-text {
+        color: #475569 !important;
+      }
+
+      [data-theme="light"] .tour-info-toggle-btn,
+      .light-theme .tour-info-toggle-btn,
+      .tour-card-compact.light-theme .tour-info-toggle-btn,
+      .tour-card-compact[data-theme="light"] .tour-info-toggle-btn {
+        background: rgba(184, 134, 11, 0.08) !important;
+        border: 1px dashed rgba(184, 134, 11, 0.4) !important;
+        color: #7c4a03 !important;
+      }
+
+      [data-theme="light"] .tour-info-toggle-btn:hover,
+      .light-theme .tour-info-toggle-btn:hover,
+      .tour-card-compact.light-theme .tour-info-toggle-btn:hover,
+      .tour-card-compact[data-theme="light"] .tour-info-toggle-btn:hover {
+        background: rgba(184, 134, 11, 0.16) !important;
+        border-color: #b8860b !important;
+      }
+
+      [data-theme="light"] .tour-details-content,
+      .light-theme .tour-details-content,
+      .tour-card-compact.light-theme .tour-details-content,
+      .tour-card-compact[data-theme="light"] .tour-details-content {
+        background: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+      }
+
+      [data-theme="light"] .tour-detail-label,
+      .light-theme .tour-detail-label,
+      .tour-card-compact.light-theme .tour-detail-label,
+      .tour-card-compact[data-theme="light"] .tour-detail-label {
+        color: #7c4a03 !important;
+      }
+
+      [data-theme="light"] .tour-detail-val,
+      .light-theme .tour-detail-val,
+      .tour-card-compact.light-theme .tour-detail-val,
+      .tour-card-compact[data-theme="light"] .tour-detail-val {
+        color: #334155 !important;
+      }
+
+      [data-theme="light"] .tour-detail-code,
+      .light-theme .tour-detail-code,
+      .tour-card-compact.light-theme .tour-detail-code,
+      .tour-card-compact[data-theme="light"] .tour-detail-code {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-left: 3px solid #b8860b !important;
+        color: #0369a1 !important;
+      }
+
+      [data-theme="light"] .tour-compact-footer,
+      .light-theme .tour-compact-footer,
+      .tour-card-compact.light-theme .tour-compact-footer,
+      .tour-card-compact[data-theme="light"] .tour-compact-footer {
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+      }
+
+      [data-theme="light"] .tour-nav-arrow-btn,
+      .light-theme .tour-nav-arrow-btn,
+      .tour-card-compact.light-theme .tour-nav-arrow-btn,
+      .tour-card-compact[data-theme="light"] .tour-nav-arrow-btn {
+        background: linear-gradient(135deg, rgba(184, 134, 11, 0.12), rgba(184, 134, 11, 0.04)) !important;
+        border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+        color: #7c4a03 !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+      }
+
+      [data-theme="light"] .tour-nav-arrow-btn:hover:not(:disabled),
+      .light-theme .tour-nav-arrow-btn:hover:not(:disabled),
+      .tour-card-compact.light-theme .tour-nav-arrow-btn:hover:not(:disabled),
+      .tour-card-compact[data-theme="light"] .tour-nav-arrow-btn:hover:not(:disabled) {
+        background: linear-gradient(135deg, #d4af37, #b8860b) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 16px rgba(184, 134, 11, 0.35) !important;
+      }
+
+      [data-theme="light"] .tour-nav-arrow-btn:disabled,
+      .light-theme .tour-nav-arrow-btn:disabled,
+      .tour-card-compact.light-theme .tour-nav-arrow-btn:disabled,
+      .tour-card-compact[data-theme="light"] .tour-nav-arrow-btn:disabled {
+        opacity: 0.25 !important;
+        border-color: #e2e8f0 !important;
+        color: #94a3b8 !important;
+      }
+
+      [data-theme="light"] .tour-dot,
+      .light-theme .tour-dot,
+      .tour-card-compact.light-theme .tour-dot,
+      .tour-card-compact[data-theme="light"] .tour-dot {
+        background: rgba(15, 23, 42, 0.2) !important;
+      }
+
+      [data-theme="light"] .tour-dot.active,
+      .light-theme .tour-dot.active,
+      .tour-card-compact.light-theme .tour-dot.active,
+      .tour-card-compact[data-theme="light"] .tour-dot.active {
+        background: #b8860b !important;
+      }
+
+      [data-theme="light"] .tour-dot:hover,
+      .light-theme .tour-dot:hover,
+      .tour-card-compact.light-theme .tour-dot:hover,
+      .tour-card-compact[data-theme="light"] .tour-dot:hover {
+        background: #7c4a03 !important;
+      }
+
+      [data-theme="light"] .tour-highlighted-element {
+        box-shadow: 0 0 0 3px #b8860b, 0 0 32px rgba(184, 134, 11, 0.45) !important;
+      }
+
+      [data-theme="light"] .fab-tour-launcher,
+      .fab-tour-launcher.light-theme,
+      .fab-tour-launcher[data-theme="light"],
+      html[data-theme="light"] .fab-tour-launcher,
+      body[data-theme="light"] .fab-tour-launcher {
+        background: linear-gradient(135deg, #fde047 0%, #d4af37 50%, #b8860b 100%) !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 8px 26px rgba(184, 134, 11, 0.4), 0 0 16px rgba(184, 134, 11, 0.25) !important;
+      }
+
+      [data-theme="light"] .fab-tour-launcher:hover,
+      .fab-tour-launcher.light-theme:hover,
+      .fab-tour-launcher[data-theme="light"]:hover,
+      html[data-theme="light"] .fab-tour-launcher:hover,
+      body[data-theme="light"] .fab-tour-launcher:hover {
+        box-shadow: 0 14px 34px rgba(184, 134, 11, 0.55), 0 0 24px rgba(184, 134, 11, 0.35) !important;
+      }
     `;
-    document.head.appendChild(style);
+  },
+
+  /**
+   * Returns current active theme ('light' or 'dark').
+   */
+  getCurrentTheme() {
+    return document.documentElement.getAttribute('data-theme') || 
+           (document.body && document.body.getAttribute('data-theme')) || 
+           localStorage.getItem('mishika_theme') || 
+           'dark';
+  },
+
+  /**
+   * Synchronizes theme classes and data attributes on all tour elements.
+   */
+  updateTheme() {
+    const theme = this.getCurrentTheme();
+    const isLight = theme === 'light';
+
+    const card = document.getElementById('boutique-tour-card');
+    const backdrop = document.getElementById('boutique-tour-backdrop');
+    const fab = document.getElementById('fab-tour-launcher');
+
+    if (card) {
+      card.setAttribute('data-theme', theme);
+      card.classList.toggle('light-theme', isLight);
+      card.classList.toggle('dark-theme', !isLight);
+    }
+    if (backdrop) {
+      backdrop.setAttribute('data-theme', theme);
+      backdrop.classList.toggle('light-theme', isLight);
+      backdrop.classList.toggle('dark-theme', !isLight);
+    }
+    if (fab) {
+      fab.setAttribute('data-theme', theme);
+      fab.classList.toggle('light-theme', isLight);
+      fab.classList.toggle('dark-theme', !isLight);
+    }
+  },
+
+  /**
+   * Automatically observes DOM data-theme changes to keep tour popup in sync.
+   */
+  initThemeObserver() {
+    if (this._themeObserver) return;
+    if (typeof MutationObserver === 'undefined') return;
+
+    this._themeObserver = new MutationObserver(() => {
+      this.updateTheme();
+    });
+
+    if (document.documentElement) {
+      this._themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+    if (document.body) {
+      this._themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+    }
   },
 
   /**
@@ -526,18 +824,27 @@ const BoutiqueTour = {
    */
   injectTourDOM() {
     this.injectStyles();
-    if (document.getElementById('boutique-tour-backdrop')) return;
+    this.initThemeObserver();
+    if (document.getElementById('boutique-tour-backdrop')) {
+      this.updateTheme();
+      return;
+    }
+
+    const theme = this.getCurrentTheme();
+    const isLight = theme === 'light';
 
     const backdrop = document.createElement('div');
     backdrop.id = 'boutique-tour-backdrop';
-    backdrop.className = 'tour-backdrop';
+    backdrop.className = `tour-backdrop ${isLight ? 'light-theme' : 'dark-theme'}`;
+    backdrop.setAttribute('data-theme', theme);
     backdrop.onclick = (e) => {
       if (e.target === backdrop) BoutiqueTour.end();
     };
 
     const card = document.createElement('div');
     card.id = 'boutique-tour-card';
-    card.className = 'tour-card-compact';
+    card.className = `tour-card-compact ${isLight ? 'light-theme' : 'dark-theme'}`;
+    card.setAttribute('data-theme', theme);
 
     card.innerHTML = `
       <!-- Top Progress Bar -->
@@ -639,6 +946,8 @@ const BoutiqueTour = {
   renderStep() {
     const step = this.steps[this.currentStepIndex];
     if (!step) return;
+
+    this.updateTheme();
 
     // 1. Auto-switch active tab
     if (step.tabId && typeof App !== 'undefined' && App.switchTab) {
@@ -773,12 +1082,17 @@ const BoutiqueTour = {
   }
 };
 
-// Automatically inject styles as soon as the script loads
+// Automatically inject styles and setup theme observer as soon as the script loads
 if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => BoutiqueTour.injectStyles());
-  } else {
+  const initTour = () => {
     BoutiqueTour.injectStyles();
+    BoutiqueTour.initThemeObserver();
+    BoutiqueTour.updateTheme();
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTour);
+  } else {
+    initTour();
   }
 }
 

@@ -26,7 +26,13 @@ const App = {
     agentPreviewMessages: [],
     agentActiveRecipientIndex: 0,
     agentEmailConfig: null,
-    theme: 'dark'
+    theme: 'dark',
+    dashboardTimeframe: 'daily',
+    reportScope: 'daily',
+    competitorData: null,
+    circuitControls: [],
+    circuitCategory: 'All Categories',
+    simSelectedPid: ''
   },
 
   async init() {
@@ -45,6 +51,9 @@ const App = {
     // Load initial data
     await this.loadDashboardData();
     await this.loadCopilotMetadata();
+    this.loadInventoryData();
+    this.loadCircuitControls();
+    this.loadReportPreview('daily');
 
     // Periodic auto-refresh every 30 seconds for live store updates
     setInterval(() => {
@@ -81,8 +90,13 @@ const App = {
   setTheme(theme, notify = true) {
     const targetTheme = (theme === 'light') ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', targetTheme);
+    document.body.setAttribute('data-theme', targetTheme);
     localStorage.setItem('mishika_theme', targetTheme);
     this.state.theme = targetTheme;
+
+    if (typeof BoutiqueTour !== 'undefined' && BoutiqueTour.updateTheme) {
+      BoutiqueTour.updateTheme();
+    }
 
     const icon = document.getElementById('theme-toggle-icon');
     const text = document.getElementById('theme-toggle-text');
@@ -155,7 +169,11 @@ const App = {
       this.loadLiveOpsData();
       setTimeout(() => this.resizeLiveArena(), 50);
     }
-    else if (tabId === 'tab-inventory') this.loadInventoryData();
+    else if (tabId === 'tab-inventory') {
+      this.loadInventoryData();
+      this.loadCircuitControls();
+    }
+    else if (tabId === 'tab-reports') this.loadReportPreview(this.state.reportScope || 'daily');
     else if (tabId === 'tab-crm') this.loadCRMData();
     else if (tabId === 'tab-campaigns') this.loadCampaignsData();
     else if (tabId === 'tab-agent') this.loadAgentData();
@@ -163,13 +181,98 @@ const App = {
   },
 
   // ----------------------------------------------------
-  // 1. DASHBOARD VIEW
+  // 1. DASHBOARD VIEW & TIMEFRAME HORIZON SWITCHBOARD
   // ----------------------------------------------------
-  async loadDashboardData(showLoading = true) {
+  onDashboardTimeframeSelected(timeframe) {
+    let tf = (timeframe || 'daily').toLowerCase().trim();
+    if (tf === 'annual' || tf === 'annually') tf = 'yearly';
+    const validTfs = ['hourly', 'daily', 'monthly', 'yearly'];
+    if (!validTfs.includes(tf)) tf = 'daily';
+    this.state.dashboardTimeframe = tf;
+
+    // Update active pill button
+    document.querySelectorAll('.dash-timeframe-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-timeframe') === tf);
+    });
+
+    // Update subtext
+    const sub = document.getElementById('dash-timeframe-sub');
+    const tfLabels = {
+      'hourly': 'Real-time dynamic sales aggregation: Hourly (Past 1 Hour)',
+      'daily': 'Real-time dynamic sales aggregation: Daily (Past 24 Hours)',
+      'monthly': 'Real-time dynamic sales aggregation: Monthly (Past 30 Days)',
+      'yearly': 'Real-time dynamic sales aggregation: Annual (All-Time Lifetime)'
+    };
+    if (sub) sub.innerText = tfLabels[tf] || tfLabels['daily'];
+
+    // Update chart titles
+    const chartTitle = document.getElementById('dash-velocity-chart-title');
+    const chartSub = document.getElementById('dash-velocity-chart-sub');
+    if (chartTitle) {
+      const titles = {
+        'hourly': 'Hourly Sales Velocity ($)',
+        'daily': 'Daily Sales Velocity ($)',
+        'monthly': 'Monthly Sales Velocity ($)',
+        'yearly': 'Annual Sales Velocity ($)'
+      };
+      chartTitle.innerText = titles[tf] || 'Daily Sales Velocity ($)';
+    }
+    if (chartSub) {
+      const subs = {
+        'hourly': 'Intraday 10-Minute Intervals',
+        'daily': 'Trailing 24h Hourly Progression',
+        'monthly': 'Trailing 30-Day Daily Trend',
+        'yearly': 'All-Time Monthly Progression'
+      };
+      chartSub.innerText = subs[tf] || 'Trailing Progression';
+    }
+
+    // Update Category Revenue Contribution subtext
+    const catSub = document.getElementById('dash-category-chart-sub');
+    if (catSub) {
+      const catSubs = {
+        'hourly': 'By Collection (Hourly - Past 1h)',
+        'daily': 'By Collection (Daily - Past 24h)',
+        'monthly': 'By Collection (Monthly - Past 30d)',
+        'yearly': 'By Collection (Annual - All-Time)'
+      };
+      catSub.innerText = catSubs[tf] || 'By Collection (Past 24 Hours)';
+    }
+
+    // Update Best-Selling Couture Pieces headers & badges
+    const stylesSub = document.getElementById('dash-top-styles-sub');
+    if (stylesSub) {
+      const stylesSubs = {
+        'hourly': 'Top styles ranked by net generated revenue (Hourly - Past 1h)',
+        'daily': 'Top styles ranked by net generated revenue (Daily - Past 24h)',
+        'monthly': 'Top styles ranked by net generated revenue (Monthly - Past 30d)',
+        'yearly': 'Top styles ranked by net generated revenue (Annual - All-Time)'
+      };
+      stylesSub.innerText = stylesSubs[tf] || 'Top styles ranked by net generated revenue';
+    }
+
+    const stylesBadge = document.getElementById('dash-top-styles-badge');
+    if (stylesBadge) {
+      const badgeLabels = {
+        'hourly': '⚡ Live Hourly Ranking (1h)',
+        'daily': '🌅 Live Daily Ranking (24h)',
+        'monthly': '📆 Live Monthly Ranking (30d)',
+        'yearly': '🏛️ Live Annual Ranking (All-Time)'
+      };
+      stylesBadge.innerText = badgeLabels[tf] || 'Live Atelier Ranking';
+    }
+
+    // Trigger immediate reload for the newly chosen timeframe
+    this.loadDashboardData(true, tf);
+  },
+
+  async loadDashboardData(showLoading = true, timeframe = null) {
+    let tf = (timeframe || this.state.dashboardTimeframe || 'daily').toLowerCase().trim();
+    if (tf === 'annual' || tf === 'annually') tf = 'yearly';
     try {
       const [statsRes, chartsRes, alertsRes] = await Promise.allSettled([
-        API.getDashboardStats(),
-        API.getDashboardCharts(),
+        API.getDashboardStats(tf),
+        API.getDashboardCharts(tf),
         API.getDashboardAlerts()
       ]);
 
@@ -183,6 +286,49 @@ const App = {
         setEl('kpi-str', `${stats.sell_through_rate_pct}%`);
         setEl('kpi-shop-stock', `${Number(stats.shop_floor_units || 0).toLocaleString()} pcs`);
         setEl('kpi-wh-stock', `${Number(stats.warehouse_reserve_units || 0).toLocaleString()} pcs`);
+
+        const tfLabels = { 'hourly': '1h', 'daily': '24h', 'monthly': '30d', 'yearly': 'Annual' };
+        const tfTag = tfLabels[tf] || '24h';
+        const revSub = document.getElementById('kpi-revenue-sub');
+        if (revSub) revSub.innerText = `▲ Real-time POS velocity (${tfTag})`;
+        const profSub = document.getElementById('kpi-profit-sub');
+        if (profSub) profSub.innerText = `Post-COGS earnings (${tfTag})`;
+        const strSub = document.getElementById('kpi-str-sub');
+        if (strSub) strSub.innerText = `Sold / Inventory (${tfTag})`;
+
+        // Ensure category and styles subtext match active horizon
+        const catSub = document.getElementById('dash-category-chart-sub');
+        if (catSub) {
+          const catSubs = {
+            'hourly': 'By Collection (Hourly - Past 1h)',
+            'daily': 'By Collection (Daily - Past 24h)',
+            'monthly': 'By Collection (Monthly - Past 30d)',
+            'yearly': 'By Collection (Annual - All-Time)'
+          };
+          catSub.innerText = catSubs[tf] || 'By Collection (Past 24 Hours)';
+        }
+
+        const stylesSub = document.getElementById('dash-top-styles-sub');
+        if (stylesSub) {
+          const stylesSubs = {
+            'hourly': 'Top styles ranked by net generated revenue (Hourly - Past 1h)',
+            'daily': 'Top styles ranked by net generated revenue (Daily - Past 24h)',
+            'monthly': 'Top styles ranked by net generated revenue (Monthly - Past 30d)',
+            'yearly': 'Top styles ranked by net generated revenue (Annual - All-Time)'
+          };
+          stylesSub.innerText = stylesSubs[tf] || 'Top styles ranked by net generated revenue';
+        }
+
+        const stylesBadge = document.getElementById('dash-top-styles-badge');
+        if (stylesBadge) {
+          const badgeLabels = {
+            'hourly': '⚡ Live Hourly Ranking (1h)',
+            'daily': '🌅 Live Daily Ranking (24h)',
+            'monthly': '📆 Live Monthly Ranking (30d)',
+            'yearly': '🏛️ Live Annual Ranking (All-Time)'
+          };
+          stylesBadge.innerText = badgeLabels[tf] || 'Live Atelier Ranking';
+        }
       } else {
         console.warn('Failed to fetch dashboard stats:', statsRes.reason);
       }
@@ -195,12 +341,15 @@ const App = {
 
         const topTbody = document.getElementById('top-styles-tbody');
         if (topTbody && charts.top_styles && charts.top_styles.length > 0) {
-          topTbody.innerHTML = charts.top_styles.map(s => `
+          topTbody.innerHTML = charts.top_styles.map((s, idx) => `
             <tr>
-              <td style="font-weight:600;">${s.name}</td>
-              <td>$${Number(s.revenue || 0).toLocaleString()}</td>
-              <td style="color:#10b981; font-weight:700;">$${Number(s.profit || 0).toLocaleString()}</td>
-              <td>${s.units} units</td>
+              <td style="font-weight:600;">
+                <span style="display:inline-block; min-width:24px; font-weight:700; color:var(--gold-primary);">#${idx + 1}</span>
+                ${s.name}
+              </td>
+              <td style="font-weight:600;">$${Number(s.revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td style="color:#10b981; font-weight:700;">$${Number(s.profit || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td>${Number(s.units || 0).toLocaleString()} units</td>
             </tr>
           `).join('');
         }
@@ -221,9 +370,676 @@ const App = {
           }
         }
       }
+
+      // 4. Populate 2x2 Diagnostics & Competitor Intelligence Suite
+      await Promise.allSettled([
+        this.loadDiagnostics(),
+        this.loadCompetitorIntelligence()
+      ]);
     } catch (err) {
       console.error('Failed to load dashboard:', err);
     }
+  },
+
+  // ----------------------------------------------------
+  // 1.1 DASHBOARD 2x2 DIAGNOSTICS
+  // ----------------------------------------------------
+  async loadDiagnostics() {
+    try {
+      const res = await API.getDashboardDiagnostics();
+      if (!res.success) return;
+
+      // 1. Sales Velocity
+      const velList = document.getElementById('diag-velocity-list');
+      if (velList && res.sell_through) {
+        velList.innerHTML = res.sell_through.slice(0, 5).map(item => {
+          const pct = Math.min(100, Math.max(0, item.sell_through_pct || 0));
+          const color = item.status === 'Hot Seller' ? '#10b981' : (item.status === 'Dead Inventory Risk' ? '#ef4444' : '#3b82f6');
+          return `
+            <div class="velocity-bar-item">
+              <div class="velocity-bar-meta">
+                <span style="font-weight:600; color:var(--text-primary);">${item.product_name}</span>
+                <span style="font-weight:700; color:${color};">${pct.toFixed(1)}% STR (${item.status})</span>
+              </div>
+              <div class="velocity-bar-track">
+                <div class="velocity-bar-fill" style="width:${pct}%; background:${color};"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 2. Competitor Benchmark CPI mini list
+      const cpiList = document.getElementById('diag-cpi-list');
+      if (cpiList && this.state.competitorData && this.state.competitorData.items) {
+        cpiList.innerHTML = this.state.competitorData.items.slice(0, 5).map(item => {
+          const idx = item.pricing_index || 100;
+          const color = idx < 92 ? '#f59e0b' : (idx > 112 ? '#8b5cf6' : '#10b981');
+          const widthPct = Math.min(100, Math.max(10, (idx / 150) * 100));
+          return `
+            <div class="velocity-bar-item">
+              <div class="velocity-bar-meta">
+                <span style="font-weight:600; color:var(--text-primary);">${item.product_name}</span>
+                <span style="font-weight:700; color:${color};">${idx.toFixed(1)}% CPI (${item.position})</span>
+              </div>
+              <div class="velocity-bar-track">
+                <div class="velocity-bar-fill" style="width:${widthPct}%; background:${color};"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 3. Customer Category Sentiment
+      const sentList = document.getElementById('diag-sentiment-list');
+      if (sentList && res.sentiment) {
+        sentList.innerHTML = res.sentiment.map(s => {
+          const score = s['Average Sentiment Score'] || 0;
+          const isPos = score >= 0;
+          const bg = isPos ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+          const color = isPos ? '#10b981' : '#ef4444';
+          return `
+            <div class="sentiment-row">
+              <span style="font-weight:600; color:var(--text-primary); font-size:12.5px;">${s['Operational Category']}</span>
+              <span class="sentiment-score-badge" style="background:${bg}; color:${color};">
+                ${score >= 0 ? '+' : ''}${score.toFixed(2)} (${s['Status']})
+              </span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // 4. Critical Size Curve Alerts
+      const brokenList = document.getElementById('diag-broken-list');
+      const brokenBadge = document.getElementById('diag-broken-badge');
+      if (brokenList) {
+        if (!res.broken_curves || res.broken_curves.length === 0) {
+          brokenList.innerHTML = `
+            <div style="text-align:center; padding:16px; color:var(--emerald); font-size:12.5px; font-weight:600;">
+              ✅ All apparel lines maintain balanced size distributions (S, M, L, XL).
+            </div>
+          `;
+          if (brokenBadge) {
+            brokenBadge.className = 'badge-emerald';
+            brokenBadge.innerText = '0 Outages';
+          }
+        } else {
+          if (brokenBadge) {
+            brokenBadge.className = 'badge-rose';
+            brokenBadge.innerText = `${res.broken_curves.length} Broken Curves`;
+          }
+          brokenList.innerHTML = res.broken_curves.map(c => `
+            <div class="broken-curve-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-weight:700; font-size:13px; color:var(--text-primary);">${c.product_name}</span>
+                <span style="font-size:10.5px; font-weight:700; color:#ef4444; background:rgba(239,68,68,0.15); padding:2px 6px; border-radius:4px;">
+                  Missing: ${(c.missing_core_sizes || []).join(', ')}
+                </span>
+              </div>
+              <div style="font-size:11.5px; color:var(--text-secondary);">
+                <b>Stranded Units:</b> ${c.stranded_stock_volume || 0} pcs | <b>Remedy:</b> ${c.remedy || 'Transfer from depot'}
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      console.warn('Diagnostics load error:', e);
+    }
+  },
+
+  // ----------------------------------------------------
+  // 1.2 COMPETITOR INTELLIGENCE & WHAT-IF REPRICING SUITE
+  // ----------------------------------------------------
+  async loadCompetitorIntelligence() {
+    try {
+      const res = await API.getCompetitorIntelligence();
+      if (!res.success) return;
+      this.state.competitorData = res;
+
+      // 1. Update 4 CPI KPIs
+      const m = res.metrics;
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setEl('cpi-metric-store', `${(m.store_cpi || 100).toFixed(1)}%`);
+      setEl('cpi-metric-position', m.store_position || 'Market Aligned');
+      setEl('cpi-metric-underpriced', `${m.underpriced_count || 0} Styles`);
+      setEl('cpi-metric-premium', `${m.premium_count || 0} Styles`);
+      setEl('cpi-metric-upside', `+$${Number(m.total_margin_opportunity || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}/mo`);
+
+      // 2. Populate Category Filter
+      const catFilter = document.getElementById('comp-category-filter');
+      if (catFilter && res.categories) {
+        const curVal = catFilter.value;
+        catFilter.innerHTML = res.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        if (res.categories.includes(curVal)) catFilter.value = curVal;
+      }
+
+      // 3. Render Parity Ledger Table
+      this.renderCompetitorParityTable();
+
+      // 4. Populate Elasticity Simulator Styles
+      this.initElasticitySimulator();
+    } catch (e) {
+      console.warn('Competitor intelligence load error:', e);
+    }
+  },
+
+  switchDashboardSubtab(subtabId) {
+    document.querySelectorAll('#tab-dashboard .subtab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.subtab === subtabId);
+    });
+    document.querySelectorAll('.dashboard-subtab-pane').forEach(p => {
+      p.style.display = p.id === subtabId ? 'block' : 'none';
+    });
+  },
+
+  onCompetitorCategoryFilter() {
+    this.renderCompetitorParityTable();
+  },
+
+  renderCompetitorParityTable() {
+    if (!this.state.competitorData) return;
+    const catFilter = document.getElementById('comp-category-filter')?.value || 'All Categories';
+    let items = this.state.competitorData.items || [];
+    if (catFilter !== 'All Categories') {
+      items = items.filter(i => i.category === catFilter);
+    }
+
+    const tbody = document.getElementById('competitor-parity-tbody');
+    if (!tbody) return;
+
+    if (items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:var(--text-muted);">No products found in category '${catFilter}'.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(p => {
+      const idx = p.pricing_index || 100;
+      const posBadge = idx < 92 ? 'badge-gold' : (idx > 112 ? 'badge-indigo' : 'badge-emerald');
+      return `
+        <tr>
+          <td style="font-weight:700;">${p.product_name}</td>
+          <td><span class="badge-gold">${p.category}</span></td>
+          <td style="font-weight:800; color:var(--gold-light);">$${Number(p.your_price || 0).toFixed(2)}</td>
+          <td style="color:var(--emerald); font-weight:700;">${(p.margin_pct || 0).toFixed(1)}%</td>
+          <td style="color:#a78bfa; font-weight:600;">$${Number(p.velvet_vine_price || 0).toFixed(2)}</td>
+          <td style="color:var(--amber); font-weight:600;">$${Number(p.avenue_price || 0).toFixed(2)}</td>
+          <td style="color:var(--emerald); font-weight:600;">$${Number(p.minimalist_price || 0).toFixed(2)}</td>
+          <td style="color:var(--text-muted);">$${Number(p.avg_market_price || 0).toFixed(2)}</td>
+          <td style="font-weight:700;">${idx.toFixed(1)}%</td>
+          <td><span class="${posBadge}">${p.position || 'Aligned'}</span></td>
+          <td style="font-weight:600; font-size:12px; color:var(--gold-light);">${p.strategic_action || 'Maintain Strategy'}</td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  initElasticitySimulator() {
+    if (!this.state.competitorData) return;
+    const items = this.state.competitorData.items || [];
+    const select = document.getElementById('sim-product-select');
+    if (!select || items.length === 0) return;
+
+    // Prioritize underpriced hazards
+    select.innerHTML = items.map(p => {
+      const tag = p.position === 'Underpriced Hazard' ? '⚠️ Underpriced' : (p.position === 'Premium Positioned' ? '💎 Premium' : '⚖️ Aligned');
+      return `<option value="${p.product_id}">${p.product_name} (${p.product_id}) - ${tag}</option>`;
+    }).join('');
+
+    // Default select first underpriced or first item
+    const firstUnderpriced = items.find(p => p.position === 'Underpriced Hazard');
+    const defaultPid = firstUnderpriced ? firstUnderpriced.product_id : items[0].product_id;
+    select.value = defaultPid;
+    this.onSimProductSelected();
+  },
+
+  onSimProductSelected() {
+    const select = document.getElementById('sim-product-select');
+    if (!select || !this.state.competitorData) return;
+    const pid = select.value;
+    const item = (this.state.competitorData.items || []).find(p => p.product_id === pid);
+    if (!item) return;
+
+    this.state.simSelectedPid = pid;
+
+    // Update Context Card
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setEl('sim-ctx-price', `$${Number(item.your_price).toFixed(2)}`);
+    setEl('sim-ctx-cost', `$${Number(item.cost).toFixed(2)} (${(item.margin_pct || 0).toFixed(1)}%)`);
+    setEl('sim-ctx-velvet', `$${Number(item.velvet_vine_price).toFixed(2)}`);
+    setEl('sim-ctx-avenue', `$${Number(item.avenue_price).toFixed(2)}`);
+    setEl('sim-ctx-mini', `$${Number(item.minimalist_price).toFixed(2)}`);
+
+    // Configure Slider min, max, val
+    const slider = document.getElementById('sim-price-slider');
+    const curPrice = Number(item.your_price);
+    const minVal = Math.max(Math.round(item.cost + 5), Math.round(curPrice * 0.7));
+    const maxVal = Math.round(curPrice * 1.5);
+    const defaultSimPrice = item.recommended_price && item.recommended_price > curPrice
+      ? Math.min(maxVal, Math.round(item.recommended_price))
+      : curPrice;
+
+    if (slider) {
+      slider.min = minVal;
+      slider.max = maxVal;
+      slider.value = defaultSimPrice;
+      document.getElementById('sim-slider-min').innerText = `$${minVal}`;
+      document.getElementById('sim-slider-max').innerText = `$${maxVal}`;
+      document.getElementById('sim-slider-val-badge').innerText = `$${defaultSimPrice.toFixed(2)}`;
+    }
+
+    this.recalculateElasticitySimulation(defaultSimPrice);
+  },
+
+  onSimSliderChange(val) {
+    const num = Number(val);
+    document.getElementById('sim-slider-val-badge').innerText = `$${num.toFixed(2)}`;
+    this.recalculateElasticitySimulation(num);
+  },
+
+  async recalculateElasticitySimulation(newPrice) {
+    const pid = this.state.simSelectedPid;
+    if (!pid) return;
+
+    try {
+      const res = await API.simulateElasticity(pid, newPrice);
+      if (!res.success) return;
+      const sim = res.simulation;
+
+      const pDiff = sim.pct_price_change || 0;
+      const vDiff = sim.pct_volume_change || 0;
+      const profitDelta = sim.profit_delta || 0;
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setEl('sim-proj-price', `$${Number(newPrice).toFixed(2)} (${pDiff >= 0 ? '+' : ''}${pDiff.toFixed(1)}%)`);
+      document.getElementById('sim-proj-price-sub').innerText = `Delta: ${newPrice - sim.old_price >= 0 ? '+' : ''}$${(newPrice - sim.old_price).toFixed(2)} / unit`;
+      document.getElementById('sim-proj-price-sub').style.color = pDiff >= 0 ? 'var(--emerald)' : '#ef4444';
+
+      setEl('sim-proj-demand', `${sim.projected_units} units (${vDiff >= 0 ? '+' : ''}${vDiff.toFixed(1)}%)`);
+      document.getElementById('sim-proj-demand-sub').innerText = `Baseline: ${sim.base_volume} units/mo (E=${sim.elasticity_applied})`;
+
+      setEl('sim-proj-profit', `$${Number(sim.new_gross_profit).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+      const profitColor = profitDelta >= 0 ? 'var(--emerald)' : '#ef4444';
+      document.getElementById('sim-proj-profit-sub').innerText = `${profitDelta >= 0 ? '+' : ''}$${profitDelta.toFixed(2)} Net Profit / mo`;
+      document.getElementById('sim-proj-profit-sub').style.color = profitColor;
+
+      setEl('sim-proj-cpi', `${(sim.new_cpi || 100).toFixed(1)}%`);
+      document.getElementById('sim-proj-cpi-sub').innerText = sim.new_position || 'Aligned';
+      document.getElementById('sim-proj-cpi-sub').style.color = sim.new_position === 'Underpriced Hazard' ? 'var(--amber)' : (sim.new_position === 'Premium Positioned' ? '#8b5cf6' : 'var(--emerald)');
+
+      const btn = document.getElementById('btn-apply-repricing');
+      if (btn) btn.innerText = `⚡ Apply $${Number(newPrice).toFixed(2)} Repricing to Catalog`;
+    } catch (e) {
+      console.warn('Simulation error:', e);
+    }
+  },
+
+  async applyCurrentRepricing() {
+    const pid = this.state.simSelectedPid;
+    const slider = document.getElementById('sim-price-slider');
+    if (!pid || !slider) return;
+
+    const newPrice = Number(slider.value);
+    const btn = document.getElementById('btn-apply-repricing');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = 'Applying repricing to SQLite...';
+    }
+
+    try {
+      const res = await API.applyReprice(pid, newPrice);
+      if (res.success) {
+        showToast(res.message, 'success');
+        await this.loadDashboardData(false);
+      } else {
+        showToast(res.detail || 'Failed to reprice', 'warning');
+      }
+    } catch (e) {
+      showToast(`Repricing failed: ${e.message}`, 'warning');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
+  // ----------------------------------------------------
+  // 3. INVENTORY & MASTER CIRCUIT CONTROLS SWITCHBOARD
+  // ----------------------------------------------------
+  async loadInventoryData() {
+    try {
+      const res = await API.getInventoryOverview();
+      if (!res.success) return;
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setEl('inv-summary-shop', `${res.total_shop_units || 0} units`);
+      setEl('inv-summary-wh', `${res.total_warehouse_units || 0} units`);
+
+      const tbody = document.getElementById('inventory-table-tbody');
+      if (tbody && res.products) {
+        tbody.innerHTML = res.products.map(p => {
+          const isLow = p.shop_stock <= 15;
+          const statusBadge = isLow
+            ? `<span class="badge-amber" style="font-size:11px;">⚠️ Restock Needed</span>`
+            : `<span class="badge-emerald" style="font-size:11px;">In Stock</span>`;
+
+          return `
+            <tr>
+              <td><span style="font-family:var(--font-mono); font-size:11.5px; color:var(--gold-light);">${p.product_id}</span></td>
+              <td>
+                <div style="font-weight:700; color:var(--text-primary);">${p.product_name}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${statusBadge}</div>
+              </td>
+              <td><span class="badge-gold">${p.category}</span></td>
+              <td style="font-weight:700; color:var(--emerald);">$${Number(p.retail_price).toFixed(2)}</td>
+              <td style="font-weight:700; color:${isLow ? '#ef4444' : 'var(--text-primary)'};">${p.shop_stock} pcs</td>
+              <td style="font-weight:700; color:var(--indigo);">${p.warehouse_stock} pcs</td>
+              <td>
+                <button class="btn btn-secondary" style="padding:4px 8px; font-size:11.5px;" onclick="App.quickTransferModal('${p.product_id}', '${p.product_name}', ${p.warehouse_stock})">
+                  🔄 Transfer to Floor
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    } catch (e) {
+      console.warn('Inventory load error:', e);
+    }
+  },
+
+  async quickTransferModal(productId, productName, maxWh) {
+    if (maxWh <= 0) {
+      showToast(`No warehouse reserve units available for ${productName}`, 'warning');
+      return;
+    }
+    const qtyStr = prompt(`Transfer units of "${productName}" from Central Depot to Shop Floor (Available: ${maxWh}):`, '5');
+    if (!qtyStr) return;
+    const qty = parseInt(qtyStr, 10);
+    if (isNaN(qty) || qty <= 0 || qty > maxWh) {
+      showToast('Invalid transfer quantity specified.', 'warning');
+      return;
+    }
+    try {
+      const res = await API.transferStock({
+        product_id: productId,
+        size_variant: 'M',
+        quantity: qty,
+        source_location: 'Warehouse',
+        dest_location: 'Shop Floor',
+        performed_by: 'Boutique Manager',
+        notes: 'Quick replenishment from switchboard'
+      });
+      if (res.success) {
+        showToast(`Transferred ${qty} units of ${productName} to Shop Floor!`, 'success');
+        await this.loadInventoryData();
+        await this.loadCircuitControls();
+      } else {
+        showToast(res.detail || 'Transfer failed', 'warning');
+      }
+    } catch (e) {
+      showToast(`Transfer failed: ${e.message}`, 'warning');
+    }
+  },
+
+  async loadCircuitControls() {
+    try {
+      const res = await API.getCircuitControls();
+      if (!res.success) return;
+      this.state.circuitControls = res.controls || [];
+
+      // Summary chips
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setEl('circuit-low-count-badge', `${res.total_low_stock || 0} Styles`);
+
+      // Category Pills
+      const pillsContainer = document.getElementById('circuit-category-pills');
+      if (pillsContainer && res.categories) {
+        pillsContainer.innerHTML = res.categories.map(c => `
+          <button class="cat-pill-btn ${c === this.state.circuitCategory ? 'active' : ''}" data-cat="${c}" onclick="App.onCircuitCategoryClick('${c}')">
+            ${c}
+          </button>
+        `).join('');
+      }
+
+      this.renderCircuitControlsTable();
+    } catch (e) {
+      console.warn('Circuit controls load error:', e);
+    }
+  },
+
+  onCircuitCategoryClick(cat) {
+    this.state.circuitCategory = cat;
+    document.querySelectorAll('.cat-pill-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === cat);
+    });
+    this.renderCircuitControlsTable();
+  },
+
+  onCircuitFilterChange() {
+    this.renderCircuitControlsTable();
+  },
+
+  renderCircuitControlsTable() {
+    const tbody = document.getElementById('circuit-controls-tbody');
+    if (!tbody || !this.state.circuitControls) return;
+
+    const lowOnly = document.getElementById('circuit-low-stock-toggle')?.checked || false;
+    const catFilter = this.state.circuitCategory || 'All Categories';
+
+    let list = this.state.circuitControls;
+    if (catFilter !== 'All Categories') {
+      list = list.filter(i => i.category === catFilter);
+    }
+    if (lowOnly) {
+      list = list.filter(i => i.is_low_stock);
+    }
+
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">✅ No items match active circuit filters.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map(item => {
+      const stockBadge = item.is_low_stock
+        ? `<span style="color:#ef4444; font-weight:700;">⚠️ Low (${item.shop_stock} / ${item.warehouse_stock})</span>`
+        : `<span style="color:var(--emerald); font-weight:600;">${item.shop_stock} / ${item.warehouse_stock} pcs</span>`;
+
+      const sizes = item.sizes || {};
+      const sizePillsHtml = ['S', 'M', 'L', 'XL'].map(sz => {
+        const qty = sizes[sz] || 0;
+        const isCrit = sz !== 'XL' && qty <= 2;
+        return `<span class="size-pill ${isCrit ? 'critical-low' : ''}">${sz}: <b>${qty}</b></span>`;
+      }).join('');
+
+      const brokenBadge = item.is_broken_curve
+        ? `<span style="font-size:10px; color:#ef4444; background:rgba(239,68,68,0.15); padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:700;">Missing ${(item.missing_sizes || []).join(', ')}</span>`
+        : '';
+
+      return `
+        <tr>
+          <td>
+            <div style="font-weight:700; color:var(--text-primary);">${item.product_name}</div>
+            <div style="font-size:11px; color:var(--text-muted);">${item.product_id} • $${Number(item.retail_price).toFixed(2)}</div>
+          </td>
+          <td><span class="badge-gold">${item.category}</span></td>
+          <td>${stockBadge}</td>
+          <td style="text-align:center;">
+            <label class="luxury-switch">
+              <input type="checkbox" ${item.sales_enabled ? 'checked' : ''} onchange="App.toggleCircuitControl('${item.product_id}', 'sales_enabled', this.checked)">
+              <span class="luxury-switch-slider"></span>
+            </label>
+          </td>
+          <td style="text-align:center;">
+            <label class="luxury-switch">
+              <input type="checkbox" ${item.purchase_enabled ? 'checked' : ''} onchange="App.toggleCircuitControl('${item.product_id}', 'purchase_enabled', this.checked)">
+              <span class="luxury-switch-slider"></span>
+            </label>
+          </td>
+          <td style="text-align:center;">
+            <input type="number" class="form-control" style="width:85px; display:inline-block; text-align:center; padding:4px 6px; font-size:12.5px;" min="10" max="2000" step="10" value="${item.max_stock}" onchange="App.updateCircuitMaxStock('${item.product_id}', this.value)">
+          </td>
+          <td>
+            <div class="size-matrix-pills">
+              ${sizePillsHtml}
+              ${brokenBadge}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  async toggleCircuitControl(productId, key, value) {
+    try {
+      const res = await API.updateCircuitControl(productId, key, value);
+      if (res.success) {
+        showToast(`Circuit ${key} updated for ${productId}`, 'success');
+        // Update local state
+        const found = (this.state.circuitControls || []).find(i => i.product_id === productId);
+        if (found) found[key] = value;
+      }
+    } catch (e) {
+      showToast(`Circuit update failed: ${e.message}`, 'warning');
+    }
+  },
+
+  async updateCircuitMaxStock(productId, value) {
+    const val = parseInt(value);
+    if (isNaN(val) || val < 10) return;
+    try {
+      const res = await API.updateCircuitControl(productId, 'max_stock', val);
+      if (res.success) {
+        showToast(`Max stock capacity set to ${val} for ${productId}`, 'success');
+        const found = (this.state.circuitControls || []).find(i => i.product_id === productId);
+        if (found) found.max_stock = val;
+      }
+    } catch (e) {
+      showToast(`Max capacity update failed: ${e.message}`, 'warning');
+    }
+  },
+
+  // ----------------------------------------------------
+  // 4. EXECUTIVE PDF AUDIT REPORTING ENGINE
+  // ----------------------------------------------------
+  onReportScopeSelected(scope) {
+    this.state.reportScope = scope;
+    document.querySelectorAll('.report-scope-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.scope === scope);
+    });
+    this.loadReportPreview(scope);
+  },
+
+  switchReportSubtab(subtabId) {
+    document.querySelectorAll('#tab-reports .subtab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.subtab === subtabId);
+    });
+    document.querySelectorAll('#tab-reports .report-subtab-pane').forEach(p => {
+      p.style.display = p.id === subtabId ? 'block' : 'none';
+    });
+  },
+
+  async loadReportPreview(scope = 'daily') {
+    this.state.reportScope = scope;
+    try {
+      // 1. Update Embedded Live PDF Document Viewer
+      const iframe = document.getElementById('report-pdf-iframe');
+      if (iframe) {
+        iframe.src = API.getEnterprisePdfUrl(scope, false) + `&_ts=${Date.now()}`;
+      }
+
+      const docBadge = document.getElementById('report-doc-filename');
+      if (docBadge) {
+        const cap = scope.charAt(0).toUpperCase() + scope.slice(1);
+        docBadge.innerText = `MishikaBoutique_${cap}_Audit.pdf`;
+      }
+
+      // 2. Fetch and populate live financial metrics from SQLite
+      const res = await API.getReportPreview(scope);
+      if (!res.success) return;
+
+      const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+      setEl('report-period-title', res.period_title || `${scope.toUpperCase()} Operations Audit`);
+      setEl('report-scope-badge', `${scope.toUpperCase()} AUDIT`);
+
+      const m = res.metrics || {};
+      setEl('rep-kpi-rev', `$${Number(m.total_revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+      setEl('rep-kpi-sales', `${Number(m.transaction_count || 0).toLocaleString()} Sales Transactions`);
+      setEl('rep-kpi-cogs', `$${Number(m.total_cogs || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+      setEl('rep-kpi-units', `${Number(m.units_sold || 0).toLocaleString()} Units Sold`);
+      setEl('rep-kpi-profit', `$${Number(m.gross_profit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+      setEl('rep-kpi-margin', `Realized Margin: ${(m.margin_pct || 0).toFixed(1)}%`);
+      setEl('rep-kpi-restock', `+${Number(m.units_restocked || 0).toLocaleString()} Units`);
+      setEl('rep-kpi-spend', `Procurement Spend: $${Number(m.restock_spend || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+
+      // Top Merch Table
+      const merchTbody = document.getElementById('report-merch-tbody');
+      if (merchTbody) {
+        if (!res.top_merch || res.top_merch.length === 0) {
+          merchTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No merchandise transactions recorded in this period.</td></tr>`;
+        } else {
+          merchTbody.innerHTML = res.top_merch.map(item => `
+            <tr>
+              <td><span style="font-family:var(--font-mono); font-size:11.5px; color:var(--gold-light);">${item.product_id}</span></td>
+              <td style="font-weight:700;">${item.product_name}</td>
+              <td style="font-weight:700;">${item.units_sold} units</td>
+              <td style="color:var(--emerald); font-weight:700;">$${Number(item.revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+              <td style="color:var(--gold-light); font-weight:700;">$${Number(item.profit || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+              <td><span class="badge-emerald">${(item.margin_pct || 0).toFixed(1)}%</span></td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      // Restock Deliveries Table
+      const restockTbody = document.getElementById('report-restock-tbody');
+      if (restockTbody) {
+        if (!res.purchases || res.purchases.length === 0) {
+          restockTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No inbound supply shipments recorded in this period.</td></tr>`;
+        } else {
+          restockTbody.innerHTML = res.purchases.map(item => `
+            <tr>
+              <td style="font-size:12px; color:var(--text-secondary);">${item.timestamp || 'Recent'}</td>
+              <td style="font-weight:700;">${item.product_name}</td>
+              <td style="color:var(--amber); font-weight:700;">+${item.quantity} units</td>
+              <td style="font-weight:700;">$${Number(item.total_cost || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+            </tr>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      console.warn('Report preview error:', e);
+    }
+  },
+
+  refreshReportPdf() {
+    const scope = this.state.reportScope || 'daily';
+    showToast(`Recompiling ${scope.toUpperCase()} Boardroom PDF from ledgers...`, 'info');
+    this.loadReportPreview(scope);
+  },
+
+  printReportPdf() {
+    const iframe = document.getElementById('report-pdf-iframe');
+    if (iframe && iframe.contentWindow) {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        return;
+      } catch (_) {
+        // Fallback to new tab print
+      }
+    }
+    window.open(API.getEnterprisePdfUrl(this.state.reportScope || 'daily', false), '_blank');
+  },
+
+  openReportPdfNewTab() {
+    const scope = this.state.reportScope || 'daily';
+    window.open(API.getEnterprisePdfUrl(scope, false), '_blank');
+  },
+
+  downloadEnterpriseReport() {
+    const scope = this.state.reportScope || 'daily';
+    const url = API.getEnterprisePdfUrl(scope, true);
+    showToast(`Downloading ${scope.toUpperCase()} Boardroom PDF Audit...`, 'success');
+    window.open(url, '_blank');
   },
 
   // ----------------------------------------------------
@@ -1365,7 +2181,7 @@ const App = {
         discLabel.innerText = `${val}%`;
         try {
           await API.updateLiveOpsSettings({ promo_discount: val });
-        } catch (_) {}
+        } catch (_) { }
       });
     }
 
@@ -1377,7 +2193,7 @@ const App = {
         spdLabel.innerText = `${val.toFixed(2)}s`;
         try {
           await API.updateLiveOpsSettings({ tick_speed: val });
-        } catch (_) {}
+        } catch (_) { }
       });
     }
   },
@@ -1647,7 +2463,7 @@ const App = {
           return `
             <div class="live-log-item" style="border-left: 3px solid var(--indigo);">
               <div style="min-width:0;">
-                <div style="font-weight:600; color:#f8fafc;">Received +${r.quantity}x units</div>
+                <div style="font-weight:600; color:var(--text-muted);">Received +${r.quantity}x units</div>
                 <div style="font-size:11px; color:var(--text-muted);">${r.product_name}</div>
               </div>
               <div style="text-align:right;">

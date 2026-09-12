@@ -313,3 +313,107 @@ def get_transfer_history(limit: int = 50) -> Dict[str, Any]:
         "count": len(records),
         "transfers": records
     }
+
+
+class CircuitControlUpdateRequest(BaseModel):
+    product_id: str
+    key: str
+    value: Any
+
+
+@router.get("/controls")
+def get_circuit_controls() -> Dict[str, Any]:
+    """
+    Returns full Master Circuit Switchboard datasets:
+    - Products with current shop & warehouse inventory balances
+    - Circuit breakers (sales_enabled, purchase_enabled, max_stock)
+    - Granular Size Matrix distribution across S, M, L, XL
+    - Broken curve flags
+    """
+    db = get_db()
+    controls_map = db.get_all_circuit_controls()
+    shop_totals = db.get_current_stock_on_hand()
+    wh_totals = db.get_warehouse_stock_on_hand()
+    shop_matrix = db.get_size_matrix_stock()
+    
+    size_map = {}
+    if not shop_matrix.empty and "product_id" in shop_matrix.columns:
+        for _, row in shop_matrix.iterrows():
+            pid = row["product_id"]
+            if pid not in size_map:
+                size_map[pid] = {}
+            size_map[pid][str(row["size_variant"])] = int(row["stock_on_hand"])
+            
+    items = []
+    categories = set()
+    for pid, details in CATALOG.items():
+        cat = details.get("category", "Luxury Apparel")
+        categories.add(cat)
+        ctrl = controls_map.get(pid, {"sales_enabled": True, "purchase_enabled": True, "max_stock": 100})
+        s_qty = shop_totals.get(pid, shop_totals.get(details.get("name", ""), 0))
+        w_qty = wh_totals.get(pid, wh_totals.get(details.get("name", ""), 0))
+        p_sizes = size_map.get(pid, {"S": 0, "M": 0, "L": 0, "XL": 0})
+        
+        core_depleted = [sz for sz in ["S", "M", "L"] if p_sizes.get(sz, 0) <= 2]
+        is_broken = len(core_depleted) >= 1
+        
+        items.append({
+            "product_id": pid,
+            "product_name": details.get("name", pid),
+            "category": cat,
+            "wholesale_cost": details.get("wholesale_cost", details.get("cost", 0.0)),
+            "retail_price": details.get("retail_price", details.get("price", 0.0)),
+            "shop_stock": s_qty,
+            "warehouse_stock": w_qty,
+            "total_stock": s_qty + w_qty,
+            "is_low_stock": s_qty <= OperationalThresholds.CRITICAL_STOCK_THRESHOLD,
+            "sales_enabled": bool(ctrl.get("sales_enabled", True)),
+            "purchase_enabled": bool(ctrl.get("purchase_enabled", True)),
+            "max_stock": int(ctrl.get("max_stock", 100)),
+            "sizes": p_sizes,
+            "is_broken_curve": is_broken,
+            "missing_sizes": core_depleted
+        })
+        
+    return {
+        "success": True,
+        "controls": items,
+        "categories": ["All Categories"] + sorted(list(categories)),
+        "total_low_stock": sum(1 for x in items if x["is_low_stock"]),
+        "total_broken_curves": sum(1 for x in items if x["is_broken_curve"])
+    }
+
+
+@router.post("/controls/update")
+def update_circuit_control_setting(req: CircuitControlUpdateRequest) -> Dict[str, Any]:
+    """
+    Updates operational guardrail circuit settings (sales_enabled, purchase_enabled, max_stock)
+    in the SQLite store_circuit_controls table.
+    """
+    db = get_db()
+    if req.product_id not in CATALOG:
+        raise HTTPException(status_code=404, detail=f"Product '{req.product_id}' not found.")
+        
+    if req.key not in ["sales_enabled", "purchase_enabled", "max_stock"]:
+        raise HTTPException(status_code=400, detail=f"Invalid circuit control key '{req.key}'.")
+        
+    val = req.value
+    if req.key in ["sales_enabled", "purchase_enabled"]:
+        val = bool(val)
+    elif req.key == "max_stock":
+        try:
+            val = int(val)
+            if val < 10:
+                raise ValueError("max_stock must be at least 10.")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid max_stock value: {e}")
+            
+    db.update_circuit_control(req.product_id, req.key, val)
+    return {
+        "success": True,
+        "product_id": req.product_id,
+        "key": req.key,
+        "value": val,
+        "message": f"Circuit breaker '{req.key}' updated to {val} for {req.product_id}."
+    }
+

@@ -16,6 +16,15 @@ const ChartsManager = {
       return;
     }
 
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light' || 
+                    (document.body && document.body.getAttribute('data-theme') === 'light') ||
+                    localStorage.getItem('mishika_theme') === 'light';
+    const textColor = isLight ? '#475569' : '#94a3b8';
+    const legendColor = isLight ? '#0f172a' : '#f8fafc';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.06)';
+    const tooltipTheme = isLight ? 'light' : 'dark';
+    const markerStroke = isLight ? '#ffffff' : '#0f172a';
+
     const hours = seriesData.map(d => d.hour);
     const revenue = seriesData.map(d => d.revenue);
     const profit = seriesData.map(d => d.profit);
@@ -46,41 +55,52 @@ const ChartsManager = {
         curve: 'smooth',
         width: 2.5
       },
+      markers: {
+        size: seriesData.length <= 2 ? 5 : 3.5,
+        colors: ['#d4af37', '#10b981'],
+        strokeColors: markerStroke,
+        strokeWidth: 1.5,
+        hover: { size: 6 }
+      },
       dataLabels: { enabled: false },
       xaxis: {
         categories: hours,
-        labels: { style: { colors: '#94a3b8', fontSize: '11px' } },
+        labels: { style: { colors: textColor, fontSize: '11px' } },
         axisBorder: { show: false },
         axisTicks: { show: false }
       },
       yaxis: {
         labels: {
-          style: { colors: '#94a3b8', fontSize: '11px' },
+          style: { colors: textColor, fontSize: '11px' },
           formatter: (val) => `$${val.toLocaleString()}`
         }
       },
       grid: {
-        borderColor: 'rgba(255, 255, 255, 0.06)',
+        borderColor: gridColor,
         strokeDashArray: 4
       },
       tooltip: {
-        theme: 'dark',
+        theme: tooltipTheme,
         y: { formatter: (val) => `$${val.toFixed(2)}` }
       },
       legend: {
         position: 'top',
         horizontalAlign: 'right',
-        labels: { colors: '#f8fafc' },
+        labels: { colors: legendColor },
         markers: { radius: 12 }
       }
     };
 
     if (ChartsManager.hourlyChart) {
-      ChartsManager.hourlyChart.updateOptions(options);
-    } else {
-      ChartsManager.hourlyChart = new ApexCharts(el, options);
-      ChartsManager.hourlyChart.render();
+      try {
+        ChartsManager.hourlyChart.destroy();
+      } catch (err) {
+        console.warn('Error resetting hourlyChart:', err);
+      }
+      ChartsManager.hourlyChart = null;
     }
+    ChartsManager.hourlyChart = new ApexCharts(el, options);
+    ChartsManager.hourlyChart.render();
   },
 
   initCategoryChart(containerId, categoryData) {
@@ -90,6 +110,14 @@ const ChartsManager = {
       el.innerHTML = '<div style="padding:40px; text-align:center; color:var(--text-muted); font-size:12px;">📊 Category data loaded. ApexCharts rendering engine connecting...</div>';
       return;
     }
+
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light' || 
+                    (document.body && document.body.getAttribute('data-theme') === 'light') ||
+                    localStorage.getItem('mishika_theme') === 'light';
+    const textColor = isLight ? '#475569' : '#94a3b8';
+    const yaxisColor = isLight ? '#0f172a' : '#f8fafc';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.06)';
+    const tooltipTheme = isLight ? 'light' : 'dark';
 
     const categories = categoryData.map(c => c.category);
     const revenues = categoryData.map(c => c.revenue);
@@ -114,37 +142,41 @@ const ChartsManager = {
       colors: ['#d4af37', '#38bdf8', '#a855f7', '#f43f5e', '#10b981'],
       dataLabels: {
         enabled: true,
-        formatter: (val) => `$${val.toLocaleString()}`,
-        style: { fontSize: '11px', colors: ['#ffffff'] }
+        formatter: (val) => `$${Math.round(val).toLocaleString()}`,
+        style: { fontSize: '11px', colors: [isLight ? '#0f172a' : '#ffffff'], fontWeight: 700 }
       },
       xaxis: {
         categories: categories,
         labels: {
-          style: { colors: '#94a3b8', fontSize: '10px' },
-          formatter: (val) => `$${val}`
+          style: { colors: textColor, fontSize: '10px' },
+          formatter: (val) => val >= 1000 ? `$${(val / 1000).toFixed(0)}k` : `$${val}`
         },
         axisBorder: { show: false }
       },
       yaxis: {
-        labels: { style: { colors: '#f8fafc', fontSize: '12px', fontWeight: 600 } }
+        labels: { style: { colors: yaxisColor, fontSize: '12px', fontWeight: 600 } }
       },
       grid: {
-        borderColor: 'rgba(255, 255, 255, 0.06)',
+        borderColor: gridColor,
         strokeDashArray: 4
       },
       tooltip: {
-        theme: 'dark',
-        y: { formatter: (val) => `$${val.toFixed(2)}` }
+        theme: tooltipTheme,
+        y: { formatter: (val) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 })}` }
       },
       legend: { show: false }
     };
 
     if (ChartsManager.categoryChart) {
-      ChartsManager.categoryChart.updateOptions(options);
-    } else {
-      ChartsManager.categoryChart = new ApexCharts(el, options);
-      ChartsManager.categoryChart.render();
+      try {
+        ChartsManager.categoryChart.destroy();
+      } catch (err) {
+        console.warn('Error resetting categoryChart:', err);
+      }
+      ChartsManager.categoryChart = null;
     }
+    ChartsManager.categoryChart = new ApexCharts(el, options);
+    ChartsManager.categoryChart.render();
   },
 
   liveStockChart: null,
@@ -243,7 +275,10 @@ const ChartsManager = {
     const isLight = mode === 'light';
     const tooltipTheme = isLight ? 'light' : 'dark';
     const textColor = isLight ? '#475569' : '#94a3b8';
-    const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.05)';
+    const legendColor = isLight ? '#0f172a' : '#f8fafc';
+    const yaxisColor = isLight ? '#0f172a' : '#f8fafc';
+    const gridColor = isLight ? 'rgba(0, 0, 0, 0.07)' : 'rgba(255, 255, 255, 0.05)';
+    const markerStroke = isLight ? '#ffffff' : '#0f172a';
 
     const commonUpdate = {
       theme: { mode: tooltipTheme },
@@ -256,7 +291,9 @@ const ChartsManager = {
         this.hourlyChart.updateOptions({
           ...commonUpdate,
           xaxis: { labels: { style: { colors: textColor } } },
-          yaxis: { labels: { style: { colors: textColor } } }
+          yaxis: { labels: { style: { colors: textColor } } },
+          legend: { labels: { colors: legendColor } },
+          markers: { strokeColors: markerStroke }
         }, false, true);
       } catch (e) {}
     }
@@ -264,7 +301,8 @@ const ChartsManager = {
       try {
         this.categoryChart.updateOptions({
           ...commonUpdate,
-          legend: { labels: { colors: textColor } }
+          xaxis: { labels: { style: { colors: textColor } } },
+          yaxis: { labels: { style: { colors: yaxisColor } } }
         }, false, true);
       } catch (e) {}
     }
