@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
   <!-- Luxury Atelier Design System -->
-  <link rel="stylesheet" href="/css/style.css?v=3.1.0">
+  <link rel="stylesheet" href="/css/style.css?v=3.2.0">
 </head>
 <body>
 
@@ -457,7 +457,7 @@
          ========================================== -->
     <section id="tab-live-ops" class="tab-content">
       <!-- Header & Subtitle -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+      <div class="live-ops-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
         <div>
           <div style="display:flex; align-items:center; gap:8px;">
             <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">⚡ Live Store Operations Pipeline & Dynamic Arena</h2>
@@ -508,11 +508,11 @@
       </div>
 
       <!-- Simulation Interactive Controls Toolbar -->
-      <div class="glass-card" style="margin-bottom:14px; padding:12px 18px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+      <div class="glass-card live-ops-toolbar" style="margin-bottom:14px; padding:12px 18px;">
+        <div class="live-ops-controls-strip">
           <!-- Left: Action buttons -->
-          <div style="display:flex; align-items:center; gap:10px;">
-            <button class="btn btn-primary" id="btn-toggle-live-ops" style="min-width:165px;">
+          <div class="live-ops-actions-group">
+            <button class="btn btn-primary" id="btn-toggle-live-ops">
               ▶️ Start Live Loop
             </button>
             <button class="btn btn-secondary" id="btn-step-live-ops" title="Step single simulation cycle">
@@ -524,14 +524,14 @@
           </div>
 
           <!-- Right: Sliders -->
-          <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);">
+          <div class="live-ops-sliders-group">
+            <div class="live-ops-slider-row">
               <span>🏷️ <b>Flash Markdown:</b></span>
               <input type="range" id="live-ops-discount-range" min="0" max="50" step="5" value="0" style="width:110px; accent-color:var(--gold-primary); cursor:pointer;">
               <span id="live-ops-discount-label" style="font-weight:700; color:var(--gold-light); min-width:32px;">0%</span>
             </div>
 
-            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary);">
+            <div class="live-ops-slider-row">
               <span>⚡ <b>Tick Speed:</b></span>
               <input type="range" id="live-ops-speed-range" min="0.1" max="1.5" step="0.05" value="0.35" style="width:110px; accent-color:var(--indigo); cursor:pointer;">
               <span id="live-ops-speed-label" style="font-weight:700; color:var(--indigo-light); min-width:38px;">0.35s</span>
@@ -614,7 +614,7 @@
          TAB 2: INVENTORY & CIRCUIT CONTROLS (SEGMENT 3)
          ========================================== -->
     <section id="tab-inventory" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div class="inv-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
         <div>
           <div style="display:flex; align-items:center; gap:8px;">
             <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">⚙️ Inventory & Store Circuit Controls Switchboard</h2>
@@ -624,16 +624,16 @@
             Manage operational safeguards, toggle customer checkout, block supplier replenishment, and inspect granular size-matrix balances per style.
           </p>
         </div>
-        <div style="display:flex; gap:12px; align-items:center;">
-          <div style="background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
+        <div class="inv-summary-counters">
+          <div class="inv-counter-box" style="background:rgba(212,175,55,0.1); border:1px solid rgba(212,175,55,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
             <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Floor Total</div>
             <div id="inv-summary-shop" style="font-size:16px; font-weight:800; color:var(--gold-light);">0 units</div>
           </div>
-          <div style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
+          <div class="inv-counter-box" style="background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
             <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Depot Total</div>
             <div id="inv-summary-wh" style="font-size:16px; font-weight:800; color:var(--indigo);">0 units</div>
           </div>
-          <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
+          <div class="inv-counter-box" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:var(--radius-md); padding:6px 14px; text-align:right;">
             <div style="font-size:10px; text-transform:uppercase; color:var(--text-muted);">Low Stock (≤15)</div>
             <div id="circuit-low-count-badge" style="font-size:16px; font-weight:800; color:#ef4444;">0 Styles</div>
           </div>
@@ -733,15 +733,15 @@
          TAB 3: VIP CLIENT CRM
          ========================================== -->
     <section id="tab-crm" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+      <div class="crm-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
         <div>
           <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">VIP Client & Clienteling CRM</h2>
           <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Manage high-net-worth client profiles, sizing, style preferences, and communication authorizations.</p>
         </div>
-        <div style="display:flex; gap:12px; align-items:center;">
-          <div>
+        <div class="crm-filter-bar">
+          <div class="crm-filter-item">
             <label class="form-label" style="margin-bottom:4px;">Filter Tier</label>
-            <select id="crm-tier-filter" class="form-control" style="width:170px;" onchange="App.loadCRMData()">
+            <select id="crm-tier-filter" class="form-control" onchange="App.loadCRMData()">
               <option value="All">All Tiers</option>
               <option value="Platinum VIP">💎 Platinum VIP</option>
               <option value="Gold VIP">🥇 Gold VIP</option>
@@ -749,9 +749,9 @@
               <option value="Bronze">🥉 Bronze</option>
             </select>
           </div>
-          <div>
+          <div class="crm-filter-item">
             <label class="form-label" style="margin-bottom:4px;">Search Client</label>
-            <input type="text" id="crm-search-input" class="form-control" placeholder="Search by name, email, phone..." style="width:240px;" oninput="App.loadCRMData()">
+            <input type="text" id="crm-search-input" class="form-control" placeholder="Search by name, email, phone..." oninput="App.loadCRMData()">
           </div>
         </div>
       </div>
@@ -783,12 +783,12 @@
          TAB 4: PRICING & CAMPAIGNS
          ========================================== -->
     <section id="tab-campaigns" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <div class="campaigns-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
         <div>
           <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">Pricing Strategies & Flash Campaigns</h2>
           <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Controlled promotional markdowns protected by luxury brand guardrails (max 50% discount cap).</p>
         </div>
-        <button class="btn btn-primary" id="btn-open-create-campaign">
+        <button class="btn btn-primary btn-launch-campaign" id="btn-open-create-campaign">
           ➕ Launch New Campaign
         </button>
       </div>
@@ -802,7 +802,7 @@
          TAB 5: SHIVI DEEP AGENT
          ========================================== -->
     <section id="tab-agent" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+      <div class="agent-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
         <div>
           <div style="display:flex; align-items:center; gap:8px;">
             <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">Shivi Deep Autonomous Retail Agent</h2>
@@ -872,11 +872,11 @@
           </div>
           <span style="font-size:11px; color:var(--text-muted);">Supports live SMTP dispatch, PDF audits, VIP lookups & circuit breakers</span>
         </div>
-        <div style="display:flex; gap:10px;">
-          <input type="text" id="agent-console-input" class="form-control" style="flex:1; font-size:13px; padding:10px 14px;" 
+        <div class="agent-console-input-row">
+          <input type="text" id="agent-console-input" class="form-control" style="font-size:13px; padding:10px 14px;" 
                  placeholder="Type an operational command, e.g. 'Send today\'s audit report to example@gmail.com' or 'Run evening closing audit'..." 
                  onkeydown="if(event.key==='Enter'){App.executeAgentConsoleCommand();}">
-          <button class="btn btn-primary" id="btn-agent-console-submit" onclick="App.executeAgentConsoleCommand()" style="padding:0 20px; white-space:nowrap;">
+          <button class="btn btn-primary" id="btn-agent-console-submit" onclick="App.executeAgentConsoleCommand()">
             ⚡ Execute Command
           </button>
         </div>
@@ -950,8 +950,8 @@
       <div id="subtab-client-previews" class="agent-subtab-content active">
         <!-- Topic Selection & Refresh Bar -->
         <div class="glass-card" style="margin-bottom:16px; padding:16px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-            <div style="flex:1; min-width:260px;">
+          <div class="agent-news-curate-bar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div class="agent-news-select-wrap">
               <label class="form-label" style="margin-bottom:4px;">Curate Fashion News by Runway Theme:</label>
               <select id="agent-news-topic-select" class="form-control" onchange="App.onAgentTopicChanged()">
                 <option value="">🌟 All Runway Trends (Auto-Rotate)</option>
@@ -962,7 +962,7 @@
                 <option value="luxury resort wear bohemian fashion">🏖️ Resort Wear & Bohemian Elegance</option>
               </select>
             </div>
-            <div style="padding-top:20px;">
+            <div class="agent-news-btn-wrap">
               <button class="btn btn-primary" id="btn-refresh-news" onclick="App.refreshAgentNews(true)">
                 🔄 Refresh Live News
               </button>
@@ -1279,7 +1279,7 @@
          TAB 4: EXECUTIVE PDF AUDIT REPORTS (SEGMENT 4)
          ========================================== -->
     <section id="tab-reports" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div class="reports-header" style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
         <div>
           <div style="display:flex; align-items:center; gap:8px;">
             <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light); margin:0;">📄 Executive Boardroom PDF Reports</h2>
@@ -1324,11 +1324,11 @@
 
       <!-- Interactive Live Executive PDF Document Viewer -->
       <div class="glass-card" style="margin-bottom:24px; padding:0; overflow:hidden; border: 1px solid rgba(212,175,55,0.3);">
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; background:rgba(18,22,32,0.9); border-bottom:1px solid rgba(212,175,55,0.2); flex-wrap:wrap; gap:12px;">
+        <div class="report-viewer-header" style="display:flex; justify-content:space-between; align-items:center; padding:14px 20px; background:rgba(18,22,32,0.9); border-bottom:1px solid rgba(212,175,55,0.2); flex-wrap:wrap; gap:12px;">
           <div style="display:flex; align-items:center; gap:12px;">
             <span style="font-size:22px;">📑</span>
             <div>
-              <div style="display:flex; align-items:center; gap:8px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <h3 class="chart-title" style="margin:0; font-size:15.5px;">Live Boardroom PDF Document Viewer</h3>
                 <span class="badge-emerald" id="report-doc-filename">MishikaBoutique_Daily_Audit.pdf</span>
               </div>
@@ -1337,7 +1337,7 @@
               </div>
             </div>
           </div>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <div class="report-viewer-actions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <button class="btn btn-secondary" style="font-size:12px; padding:5px 12px;" onclick="App.refreshReportPdf()" title="Recompile live PDF from SQLite ledgers">
               🔄 Recompile
             </button>
@@ -1347,13 +1347,13 @@
             <button class="btn btn-secondary" style="font-size:12px; padding:5px 12px;" onclick="App.openReportPdfNewTab()" title="Open PDF in a full new tab">
               ↗️ Full Window
             </button>
-            <button class="btn btn-primary" style="font-size:12px; padding:6px 16px; font-weight:700;" onclick="App.downloadEnterpriseReport()" title="Download PDF attachment">
+            <button class="btn btn-primary btn-report-dl-main" style="font-size:12px; padding:6px 16px; font-weight:700;" onclick="App.downloadEnterpriseReport()" title="Download PDF attachment">
               📥 Download PDF
             </button>
           </div>
         </div>
 
-        <div style="position:relative; width:100%; height:760px; background:#0f131d;">
+        <div class="report-pdf-container" style="position:relative; width:100%; height:760px; background:#0f131d;">
           <iframe id="report-pdf-iframe" class="report-pdf-frame" src="/api/reports/enterprise-pdf?scope=daily" style="width:100%; height:100%; border:none; display:block;" title="Executive Boardroom PDF Report Document"></iframe>
         </div>
       </div>
@@ -1368,7 +1368,7 @@
           <span class="badge-gold" id="report-scope-badge">DAILY OPERATIONS</span>
         </div>
 
-        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); margin-bottom:16px;">
+        <div class="kpi-grid" style="margin-bottom:16px;">
           <div class="kpi-card" style="border-left: 4px solid var(--emerald);">
             <div class="kpi-label">Total Revenue</div>
             <div class="kpi-value" id="rep-kpi-rev" style="color:var(--emerald);">$0.00</div>
@@ -1469,19 +1469,21 @@
          TAB 6: DATA SCIENCE SANDBOX
          ========================================== -->
     <section id="tab-sandbox" class="tab-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+      <div class="sandbox-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
         <div>
           <h2 style="font-family:var(--font-serif); font-size:22px; color:var(--gold-light);">Data Science Execution Sandbox</h2>
           <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">Execute real-time Python analytics against live SQLite transactions and inventory tables.</p>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <select id="sandbox-preset-select" class="form-control" style="width:280px;"></select>
-          <button class="btn btn-secondary" id="btn-sandbox-reload" title="Reset to preset source">
-            🔄 Reload
-          </button>
-          <button class="btn btn-primary" id="btn-sandbox-execute">
-            ▶️ Run Script
-          </button>
+        <div class="sandbox-controls-group">
+          <select id="sandbox-preset-select" class="form-control"></select>
+          <div class="sandbox-buttons-group">
+            <button class="btn btn-secondary" id="btn-sandbox-reload" title="Reset to preset source">
+              🔄 Reload
+            </button>
+            <button class="btn btn-primary" id="btn-sandbox-execute">
+              ▶️ Run Script
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1745,9 +1747,9 @@
   <div id="toast-container"></div>
 
   <!-- Client Application Scripts -->
-  <script src="/js/api.js?v=3.1.0"></script>
-  <script src="/js/charts.js?v=3.1.0"></script>
-  <script src="/js/tour.js?v=3.1.0"></script>
-  <script src="/js/app.js?v=3.1.0"></script>
+  <script src="/js/api.js?v=3.2.0"></script>
+  <script src="/js/charts.js?v=3.2.0"></script>
+  <script src="/js/tour.js?v=3.2.0"></script>
+  <script src="/js/app.js?v=3.2.0"></script>
 </body>
 </html>

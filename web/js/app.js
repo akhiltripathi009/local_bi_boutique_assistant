@@ -2706,7 +2706,7 @@ const App = {
       ctx.clearRect(0, 0, curW, curH);
 
       const groundY = curH - 52;
-      const boutiqueX = Math.max(curW - 165, 520);
+      const boutiqueX = curW <= 520 ? Math.max(curW - 135, 170) : Math.max(curW - 165, Math.min(520, curW * 0.72));
 
       // 2. Stars
       stars.forEach(s => {
@@ -2728,8 +2728,8 @@ const App = {
       // Glowing road dashes
       ctx.setLineDash([12, 16]);
       ctx.beginPath();
-      ctx.moveTo(140, groundY + 12);
-      ctx.lineTo(curW - 40, groundY + 12);
+      ctx.moveTo(curW <= 480 ? 90 : 140, groundY + 12);
+      ctx.lineTo(curW - 20, groundY + 12);
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
       ctx.stroke();
@@ -3088,8 +3088,9 @@ const App = {
       state.waveSplash = 0.8;
     } else if (eventType === 'Sale') {
       const curW = state.ctx?.canvas?.getBoundingClientRect()?.width || 800;
-      state.shopper.x = Math.max(curW - 20, 680);
-      state.shopper.targetX = Math.max(curW - 130, 540);
+      const bX = curW <= 520 ? Math.max(curW - 135, 170) : Math.max(curW - 165, Math.min(520, curW * 0.72));
+      state.shopper.x = curW + 20;
+      state.shopper.targetX = bX + 35;
       state.shopper.state = 'entering';
       state.shopper.hasBag = false;
     }
