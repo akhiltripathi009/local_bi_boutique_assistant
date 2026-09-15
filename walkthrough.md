@@ -257,3 +257,40 @@ Launch the application:
 3. Switch advisory personas (e.g. from *Senior Merchandise Director* to *Pricing & Margin Strategist*) to adjust the analytical tone.
 4. Use the model dropdown to switch between installed models (e.g. `llama3.2:3b` vs `mistral:latest`).
 5. Carry on an interactive back-and-forth strategic conversation.
+
+---
+
+## 5. Commercial Mobile & Touch Architecture Upgrade
+
+### Overview
+Transformed the **Mishika Fashion Luxury Boutique Atelier** commercial SaaS web application into a fully responsive, touch-optimized experience designed for smartphones and tablets (320px to 768px+) while maintaining its signature luxury glassmorphic dark aesthetic.
+
+### Key Enhancements
+
+1. **Adaptive Luxury App Header**:
+   - On screens `<= 768px`, the header reorganizes into a compact mobile command bar:
+     - Atelier brand logo (32px) and title on the left.
+     - Right section contains a compact square Theme Toggle (icon only `☀️`), a touch-friendly Copilot trigger (`✨ AI Copilot`), and status indicator.
+     - The 3 report export buttons (`📄 Morning PDF`, `📑 Evening PDF`, `📊 Board PPTX`) transition into a dedicated, clean horizontal action row (`.header-reports-group`) below the brand row, ensuring immediate 1-tap downloads without horizontal layout overflow.
+
+2. **Touch-Swipe Navigation Tabs**:
+   - Navigation bar (`.nav-tabs-bar`) features smooth momentum touch scrolling (`-webkit-overflow-scrolling: touch`), hidden scrollbars, and `scroll-snap-type: x mandatory`.
+   - When users tap or switch tabs via code, `switchTab` automatically auto-scrolls the active tab button into center view (`scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })`).
+
+3. **2-Column Mobile Executive KPI Cards**:
+   - Changed `.kpi-grid` on mobile from a 1-column layout to a structured 2-column grid (`repeat(2, 1fr)`) with compact numbers (`18px`) and streamlined padding (`12px 10px`), displaying key financial metrics side-by-side cleanly without clipping.
+
+4. **Responsive Horizon Switchboard & Charts**:
+   - The Executive Timeframe Switchboard adapts into a 4-column or 2x2 touch button grid on smartphones (`Hourly`, `Daily`, `Monthly`, `Annual`).
+   - ApexCharts (`hourlyChart`, `categoryChart`, `liveStockChart`) now include mobile responsive breakpoints (`breakpoint: 768`, `breakpoint: 480`) that adjust chart heights (200px - 240px), rotate x-axis labels, position legends at bottom, and automatically re-render upon device orientation changes.
+
+5. **Scroll-Safe Tables & Ledgers**:
+   - All financial ledgers and SKU inventory tables are enclosed in `.data-table-container` with `overflow-x: auto; -webkit-overflow-scrolling: touch;` and a minimum width (`580px`), guaranteeing table columns remain legible without expanding the page width.
+
+6. **Full-Screen Luxury Mobile Copilot Drawer**:
+   - On mobile screens (`<= 600px`), `.copilot-drawer` expands to a native full-screen app view (`100vw`, `100dvh`), with touch-friendly input fields (`min-height: 42px`), horizontal swipeable action chips, and safe-area inset padding (`env(safe-area-inset-bottom)`).
+
+7. **Adaptive Modals & Grids**:
+   - Modals (Stock Transfer, VIP Contact Editor, Campaign Creator) adjust to `calc(100vw - 20px)` with full-width action buttons and stacked inputs.
+   - All multi-column inline grids across all 8 tabs now use semantic responsive classes (`.responsive-grid-2`, `.responsive-grid-split`, `.modal-grid-2`, `.modal-grid-3`).
+

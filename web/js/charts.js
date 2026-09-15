@@ -88,7 +88,26 @@ const ChartsManager = {
         horizontalAlign: 'right',
         labels: { colors: legendColor },
         markers: { radius: 12 }
-      }
+      },
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            chart: { height: 240 },
+            legend: { position: 'bottom', horizontalAlign: 'center' },
+            xaxis: { labels: { rotate: -45, style: { fontSize: '9px' } } },
+            yaxis: { labels: { style: { fontSize: '9.5px' } } }
+          }
+        },
+        {
+          breakpoint: 480,
+          options: {
+            chart: { height: 210 },
+            markers: { size: 2.5 },
+            stroke: { width: 1.8 }
+          }
+        }
+      ]
     };
 
     if (ChartsManager.hourlyChart) {
@@ -164,7 +183,18 @@ const ChartsManager = {
         theme: tooltipTheme,
         y: { formatter: (val) => `$${Number(val).toLocaleString('en-US', { minimumFractionDigits: 2 })}` }
       },
-      legend: { show: false }
+      legend: { show: false },
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            chart: { height: 240 },
+            plotOptions: { bar: { barHeight: '70%' } },
+            yaxis: { labels: { style: { fontSize: '10px' } } },
+            dataLabels: { style: { fontSize: '9.5px' } }
+          }
+        }
+      ]
     };
 
     if (ChartsManager.categoryChart) {
@@ -260,7 +290,17 @@ const ChartsManager = {
           }
         }
       },
-      legend: { show: false }
+      legend: { show: false },
+      responsive: [
+        {
+          breakpoint: 768,
+          options: {
+            chart: { height: 200 },
+            plotOptions: { bar: { columnWidth: '85%' } },
+            xaxis: { labels: { show: false } }
+          }
+        }
+      ]
     };
 
     if (ChartsManager.liveStockChart) {
@@ -317,3 +357,20 @@ const ChartsManager = {
     }
   }
 };
+
+// Listen for window orientation or resize events to re-render charts cleanly
+let _resizeChartTimeout = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeChartTimeout);
+  _resizeChartTimeout = setTimeout(() => {
+    if (ChartsManager.hourlyChart) {
+      try { ChartsManager.hourlyChart.render(); } catch (e) {}
+    }
+    if (ChartsManager.categoryChart) {
+      try { ChartsManager.categoryChart.render(); } catch (e) {}
+    }
+    if (ChartsManager.liveStockChart) {
+      try { ChartsManager.liveStockChart.render(); } catch (e) {}
+    }
+  }, 150);
+});

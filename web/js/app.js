@@ -157,11 +157,23 @@ const App = {
   switchTab(tabId) {
     this.state.activeTab = tabId;
     document.querySelectorAll('.nav-tab-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.tab === tabId);
+      const isActive = b.dataset.tab === tabId;
+      b.classList.toggle('active', isActive);
+      if (isActive) {
+        // Auto-scroll the active tab into center view on mobile touch devices
+        try {
+          b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } catch (e) {}
+      }
     });
     document.querySelectorAll('.tab-content').forEach(c => {
       c.classList.toggle('active', c.id === tabId);
     });
+
+    // Notify ApexCharts to recalculate dimensions for the newly active view
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 60);
 
     // Lazy load data for selected tab
     if (tabId === 'tab-dashboard') this.loadDashboardData();

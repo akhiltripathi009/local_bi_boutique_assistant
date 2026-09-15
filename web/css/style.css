@@ -2804,5 +2804,608 @@ input:checked + .luxury-switch-slider:before {
   font-size: 12.5px;
 }
 
+/* ==============================================================================
+   MISHIKA FASHION LUXURY BOUTIQUE - RESPONSIVE MOBILE & TOUCH ARCHITECTURE
+   Tailored for smartphones & tablets (320px - 768px+) with Luxury Glassmorphic Polish
+   ============================================================================== */
 
+/* Safe area insets & mobile touch reset */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
 
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Touch targets */
+button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
+  touch-action: manipulation;
+}
+
+/* Responsive Grid Utility System */
+.responsive-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.responsive-grid-split {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+}
+
+.responsive-grid-autofit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.responsive-campaigns-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.modal-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.modal-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+/* Header reports group default styling */
+.header-reports-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-header-report {
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.copilot-btn-text-short {
+  display: none;
+}
+
+/* Store Marquee Default */
+.store-marquee-banner {
+  margin-bottom: 18px;
+  padding: 8px 16px;
+  background: rgba(212, 175, 55, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--gold-light);
+  gap: 10px;
+}
+
+.marquee-items {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.marquee-sep {
+  opacity: 0.5;
+}
+
+/* ==============================================================================
+   MEDIA QUERY BREAKPOINTS
+   ============================================================================== */
+
+/* ------------------------------------------------------------------------------
+   1. TABLETS & SMALL LAPTOPS (<= 1024px)
+   ------------------------------------------------------------------------------ */
+@media (max-width: 1024px) {
+  .app-container {
+    padding: 18px;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .responsive-grid-split {
+    grid-template-columns: 1fr;
+  }
+  .elasticity-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+   2. MOBILE LANDSCAPE & TABLETS (<= 900px)
+   ------------------------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .responsive-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .responsive-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .header-reports-group .report-btn-text {
+    display: none;
+  }
+  .header-reports-group .btn-header-report {
+    padding: 6px 9px !important;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+   3. SMARTPHONES & PHABLETS (<= 768px) - CORE MOBILE SYSTEM
+   ------------------------------------------------------------------------------ */
+@media (max-width: 768px) {
+  /* Layout & Spacing */
+  .app-container {
+    padding: 12px 10px calc(76px + var(--sab)) 10px;
+    max-width: 100vw;
+  }
+
+  /* Sticky App Header */
+  .app-header {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .brand-section {
+    gap: 10px;
+  }
+
+  .brand-logo-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 17px;
+  }
+
+  .brand-title {
+    font-size: 16px;
+    letter-spacing: 0.2px;
+  }
+
+  .brand-subtitle {
+    display: none; /* Hide lengthy subtitle on mobile to preserve vertical space */
+  }
+
+  .header-status-group {
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  /* Status badge on mobile */
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 10.5px;
+  }
+  #header-status-text {
+    display: none; /* Show dot only on small header */
+  }
+
+  /* Header reports bar: clean mobile sub-row */
+  .header-reports-group {
+    order: 3;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .btn-header-report {
+    flex: 1;
+    justify-content: center;
+    font-size: 11px !important;
+    padding: 7px 6px !important;
+  }
+  .header-reports-group .report-btn-text {
+    display: inline;
+    font-size: 10.5px;
+  }
+
+  /* Compact Theme Toggle Button */
+  .btn-theme-toggle {
+    padding: 7px 9px;
+    font-size: 13px;
+  }
+  .theme-toggle-label {
+    display: none; /* Icon-only on mobile */
+  }
+
+  /* Compact Copilot Trigger */
+  .btn-copilot-trigger {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+  .copilot-btn-text-full {
+    display: none;
+  }
+  .copilot-btn-text-short {
+    display: inline;
+  }
+
+  /* Store Marquee Banner */
+  .store-marquee-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 12px;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .marquee-items {
+    gap: 6px;
+  }
+  .marquee-sep {
+    display: none;
+  }
+  .marquee-item {
+    display: block;
+    width: 100%;
+  }
+
+  /* Navigation Tabs Bar: Smooth Touch Swiping */
+  .nav-tabs-bar {
+    padding: 4px;
+    gap: 6px;
+    margin-bottom: 16px;
+    border-radius: var(--radius-md);
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .nav-tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-tab-btn {
+    scroll-snap-align: start;
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 40px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Executive Timeframe Horizon Switchboard */
+  .dash-timeframe-container {
+    padding: 12px 10px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    gap: 10px;
+  }
+
+  .dash-timeframe-badge {
+    font-size: 11.5px;
+  }
+
+  .dash-timeframe-sub {
+    font-size: 11px;
+  }
+
+  .dash-timeframe-pills {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    width: 100%;
+  }
+
+  .dash-timeframe-btn {
+    padding: 7px 2px;
+    min-height: 44px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    text-align: center;
+  }
+
+  .dash-timeframe-btn .tf-icon {
+    font-size: 13px;
+  }
+
+  .dash-timeframe-btn .tf-label {
+    font-size: 10.5px;
+  }
+
+  .dash-timeframe-btn .tf-tag {
+    font-size: 8.5px;
+    padding: 1px 3px;
+  }
+
+  /* Executive KPI Grid: Clean 2-Column Mobile Grid */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px;
+  }
+
+  .kpi-card {
+    padding: 12px 10px;
+    border-radius: var(--radius-md);
+  }
+
+  .kpi-label {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+
+  .kpi-value {
+    font-size: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  .kpi-subtext {
+    font-size: 9.5px;
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Glass Cards & Containers */
+  .glass-card {
+    padding: 14px 12px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .chart-title {
+    font-size: 13.5px;
+  }
+
+  /* Data Tables with Smooth Horizontal Scroll */
+  .data-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 14px;
+  }
+
+  .luxury-table {
+    min-width: 580px; /* Guarantees columns remain readable */
+  }
+
+  .luxury-table th {
+    padding: 10px 12px;
+    font-size: 10px;
+  }
+
+  .luxury-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* Live Ops Controls & Strip */
+  .live-strip-card {
+    padding: 10px 12px;
+  }
+
+  .live-strip-val {
+    font-size: 17px;
+  }
+
+  /* Shivi Action Cards in Chat & Console */
+  .chat-action-card {
+    margin: 8px 0;
+    padding: 12px 10px;
+    border-radius: var(--radius-md);
+  }
+
+  .action-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .action-card-title {
+    font-size: 12.5px;
+  }
+
+  .action-card-summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr)) !important;
+    gap: 6px;
+    margin: 10px 0;
+  }
+
+  .action-card-item {
+    padding: 7px 6px;
+  }
+
+  .action-card-item .item-val {
+    font-size: 12px;
+  }
+
+  .action-card-actions {
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .action-card-actions .btn-action-dl,
+  .action-card-actions .btn-action-mail,
+  .action-card-actions button {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+
+  /* Floating Tour Launcher */
+  .fab-tour-launcher {
+    bottom: calc(16px + var(--sab));
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+   4. FULL-SCREEN COPILOT DRAWER & MODALS ON MOBILE (<= 600px)
+   ------------------------------------------------------------------------------ */
+@media (max-width: 600px) {
+  /* Modals: Mobile Adaptive Dialogs */
+  .modal-container {
+    width: calc(100vw - 20px) !important;
+    max-width: 100vw !important;
+    margin: 10px !important;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 16px 14px !important;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-grid-2,
+  .modal-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding-top: 14px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+
+  /* Shivi Slide-out Drawer: Full-Screen Luxury Mobile Mode */
+  .copilot-drawer {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100% !important;
+    border-left: none;
+    border-radius: 0;
+  }
+
+  .drawer-header {
+    padding: 12px 14px;
+  }
+
+  .drawer-body {
+    padding: 12px 10px;
+  }
+
+  .chat-bubble {
+    max-width: 92%;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .drawer-footer {
+    padding: 10px 10px calc(10px + var(--sab)) 10px;
+  }
+
+  .copilot-action-chips-bar {
+    gap: 5px;
+    padding: 6px 0;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .copilot-action-chips-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .copilot-chip-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    min-height: 34px;
+    flex-shrink: 0;
+  }
+
+  .chat-input-row {
+    gap: 6px;
+  }
+
+  #copilot-chat-input {
+    font-size: 13px;
+    padding: 10px 12px;
+    min-height: 42px;
+  }
+
+  #btn-copilot-send {
+    padding: 0 16px;
+    min-height: 42px;
+  }
+
+  /* Timeframe Pills on 360px-420px screens: 2x2 Grid */
+  .dash-timeframe-pills {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dash-timeframe-btn {
+    flex-direction: row;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 6px;
+  }
+
+  .dash-timeframe-btn .tf-tag {
+    display: none; /* Hide tag on tiny screens */
+  }
+
+  /* Responsive Autofit Grids */
+  .responsive-grid-autofit,
+  .responsive-campaigns-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+   5. ULTRA-COMPACT MOBILE (< 360px)
+   ------------------------------------------------------------------------------ */
+@media (max-width: 360px) {
+  .kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .brand-title {
+    font-size: 14px;
+  }
+  .btn-copilot-trigger {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+}
