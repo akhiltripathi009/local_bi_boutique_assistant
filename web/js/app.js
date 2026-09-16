@@ -3215,11 +3215,11 @@ const App = {
       const activeColor = this.state.lookbookState.activeColors[item.product_id] || (item.colorways && item.colorways[0]) || { hex: '#2ecc71', name: 'Original' };
       const svgArt = this.generateGarmentSVG(item, activeColor.hex, false, item.product_id);
 
-      // Offer Pill
+      // Offer Pill (Cleanly Clamped)
       const offerBadge = item.has_offer ? `
-        <div class="offer-pill">
+        <div class="offer-pill" title="${item.campaign_name || 'Exclusive Promo'}: -${Math.round(item.discount_pct)}% OFF">
           <span class="offer-flame">🔥</span>
-          <span>${item.campaign_name || 'Exclusive Promo'}: -${Math.round(item.discount_pct)}% OFF</span>
+          <span class="offer-text">-${Math.round(item.discount_pct)}% OFF</span>
         </div>
       ` : '';
 
@@ -3230,7 +3230,7 @@ const App = {
           <div class="lookbook-price-row">
             <span class="price-discounted">$${Number(item.discounted_price).toFixed(2)}</span>
             <span class="price-original">$${Number(item.retail_price).toFixed(2)}</span>
-            <span class="price-savings">Save $${Number(item.savings).toFixed(2)}</span>
+            <span class="price-savings">Save $${Number(item.savings).toFixed(0)}</span>
           </div>
         `;
       } else {
@@ -3271,22 +3271,24 @@ const App = {
           <!-- Garment Card Info Content -->
           <div class="lookbook-card-body">
             <div class="lookbook-meta-top">
-              <span class="badge-gold">${item.category}</span>
-              <span class="lookbook-sku-tag">SKU: ${item.product_id}</span>
+              <div class="lookbook-meta-left">
+                <span class="badge-gold">${item.category}</span>
+                <span class="lookbook-sku-tag">${item.product_id}</span>
+              </div>
               <span class="stock-status-chip ${item.total_stock > 200 ? 'in-stock' : 'low-stock'}">
-                ${item.total_stock} in stock
+                ${item.total_stock} pcs
               </span>
             </div>
 
-            <h3 class="lookbook-card-title">${item.product_name}</h3>
-            <p class="lookbook-card-silhouette">${item.silhouette}</p>
+            <h3 class="lookbook-card-title" title="${item.product_name}">${item.product_name}</h3>
+            <p class="lookbook-card-silhouette" title="${item.silhouette}">${item.silhouette}</p>
 
             ${priceHtml}
 
             <!-- Swatches & Color Customizer -->
             <div class="colorway-selector-wrap">
               <div class="colorway-label-row">
-                <span class="colorway-label-heading">Selected Shade:</span>
+                <span class="colorway-label-heading">Shade:</span>
                 <span class="active-color-name" id="color-name-${item.product_id}">${activeColor.name}</span>
               </div>
               <div class="swatches-cluster">
@@ -3296,25 +3298,26 @@ const App = {
 
             <!-- Fabric Quick Chips -->
             <div class="fabric-specs-row">
-              <span class="fabric-spec-chip" title="Composition">🧵 ${item.fabric?.composition || 'Natural Fiber'}</span>
-              <span class="fabric-spec-chip" title="Material Weight">⚖️ ${item.fabric?.weight_gsm || 'Standard GSM'}</span>
-              <span class="fabric-spec-chip" title="Weave Type">✨ ${item.fabric?.weave || 'Artisan Weave'}</span>
+              <span class="fabric-spec-chip" title="Composition: ${item.fabric?.composition || 'Natural Fiber'}">🧵 ${item.fabric?.composition || 'Natural Fiber'}</span>
+              <span class="fabric-spec-chip" title="Material Weight: ${item.fabric?.weight_gsm || 'Standard GSM'}">⚖️ ${item.fabric?.weight_gsm || 'Standard GSM'}</span>
             </div>
 
             <!-- Dual-Location Stock Summary -->
             <div class="stock-loc-strip">
-              <span class="stock-loc-item">🏬 Floor Display: <b>${item.shop_stock}</b></span>
+              <span class="stock-loc-item" title="Floor Display Stock">🏬 Floor: <b>${item.shop_stock}</b></span>
               <span class="stock-loc-sep">•</span>
-              <span class="stock-loc-item">📦 Backroom Depot: <b>${item.warehouse_stock}</b></span>
+              <span class="stock-loc-item" title="Backroom Depot Reserve">📦 Depot: <b>${item.warehouse_stock}</b></span>
             </div>
 
             <!-- Card Actions -->
             <div class="lookbook-card-actions">
-              <button class="btn btn-secondary btn-dossier" onclick="App.openLookbookDossier('${item.product_id}')">
-                🔬 Dossier & Sizing
+              <button type="button" class="btn btn-secondary btn-dossier" onclick="App.openLookbookDossier('${item.product_id}')" title="Technical Dossier & Sizing">
+                <span class="btn-icon">🔬</span>
+                <span class="btn-text">Dossier</span>
               </button>
-              <button class="btn btn-primary btn-replenish" onclick="App.quickTransferFromDossier('${item.product_id}')" title="Replenish from Warehouse to Floor">
-                ⚡ Replenish
+              <button type="button" class="btn btn-primary btn-replenish" onclick="App.quickTransferFromDossier('${item.product_id}')" title="Replenish from Warehouse to Floor Display">
+                <span class="btn-icon">⚡</span>
+                <span class="btn-text">Restock</span>
               </button>
             </div>
           </div>

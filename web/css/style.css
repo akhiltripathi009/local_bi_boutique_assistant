@@ -4712,11 +4712,13 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   cursor: pointer;
 }
 
-/* Lookbook Grid & Cards (Compact Multi-Column) */
+/* Lookbook Grid & Cards (Robust Non-Overlapping Architecture) */
 .lookbook-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .lookbook-card {
@@ -4729,6 +4731,9 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .lookbook-card:hover {
@@ -4737,7 +4742,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 14px rgba(212, 175, 55, 0.15);
 }
 
-/* Garment Interactive Visual Stage (Compact) */
+/* Garment Interactive Visual Stage (Compact & Clamped) */
 .garment-stage {
   position: relative;
   display: flex;
@@ -4745,21 +4750,25 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   align-items: center;
   padding: 8px 6px 2px 6px;
   background: radial-gradient(circle at 50% 45%, rgba(212, 175, 55, 0.1) 0%, rgba(15, 23, 42, 0.4) 70%);
-  min-height: 150px;
-  height: 150px;
+  min-height: 145px;
+  height: 145px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .garment-svg-wrap {
   width: 100%;
-  max-width: 115px;
-  height: 140px;
+  max-width: 110px;
+  height: 135px;
   display: flex;
   justify-content: center;
   align-items: center;
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
 
 .lookbook-card:hover .garment-svg-wrap {
@@ -4769,7 +4778,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 .garment-vector-art {
   width: 100%;
   height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .garment-fill-target {
@@ -4781,7 +4790,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   top: 4px;
   right: 6px;
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.04);
   text-transform: uppercase;
@@ -4793,11 +4802,12 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   position: absolute;
   top: 5px;
   left: 5px;
+  max-width: calc(100% - 10px);
   font-size: 8.5px;
   font-weight: 800;
   color: #10b981;
-  background: rgba(16, 185, 129, 0.16);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.45);
   border-radius: 999px;
   padding: 2px 6px;
   letter-spacing: 0.3px;
@@ -4806,6 +4816,14 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   gap: 3px;
   z-index: 2;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.offer-pill .offer-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .offer-flame {
@@ -4814,10 +4832,14 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
 /* Card Body & Product Specs */
 .lookbook-card-body {
-  padding: 8px 10px 10px 10px;
+  padding: 8px 9px 9px 9px;
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .lookbook-meta-top {
@@ -4826,25 +4848,40 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   justify-content: space-between;
   gap: 4px;
   margin-bottom: 3px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lookbook-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .lookbook-meta-top .badge-gold {
-  font-size: 9px;
-  padding: 1px 5px;
+  font-size: 8.5px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .lookbook-sku-tag {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--gold-light);
+  white-space: nowrap;
 }
 
 .stock-status-chip {
-  font-size: 9px;
-  padding: 1px 5px;
+  font-size: 8.5px;
+  padding: 1px 4px;
   border-radius: 4px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stock-status-chip.in-stock {
@@ -4989,13 +5026,15 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 /* Fabric Quick Chips */
 .fabric-specs-row {
   display: flex;
-  flex-wrap: wrap;
   gap: 3px;
   margin-bottom: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .fabric-spec-chip {
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -5003,9 +5042,9 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   border-radius: 3px;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   white-space: nowrap;
-  max-width: 100%;
+  max-width: 55%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -5013,12 +5052,23 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 .stock-loc-strip {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 4px;
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--text-muted);
   margin-bottom: 6px;
   padding-top: 3px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.stock-loc-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .stock-loc-item b {
@@ -5026,41 +5076,48 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 }
 
 .stock-loc-sep {
-  opacity: 0.4;
+  opacity: 0.35;
+  flex-shrink: 0;
 }
 
-/* Card Action Buttons (Smaller, Sleeker) */
+/* Card Action Buttons (Equal 50/50 Grid, Zero Overlap) */
 .lookbook-card-actions {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
   margin-top: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.lookbook-card-actions .btn-dossier {
-  padding: 4px 6px !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  border-radius: 4px !important;
-  letter-spacing: 0px !important;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-}
-
+.lookbook-card-actions .btn-dossier,
 .lookbook-card-actions .btn-replenish {
-  padding: 4px 6px !important;
+  padding: 5px 3px !important;
   font-size: 10px !important;
   font-weight: 600 !important;
   border-radius: 4px !important;
   letter-spacing: 0px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  cursor: pointer;
+}
+
+.lookbook-card-actions .btn-text {
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lookbook-card-actions .btn-icon {
+  flex-shrink: 0;
+  font-size: 11px;
 }
 
 /* ==============================================================================
@@ -5551,8 +5608,10 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     flex: 1;
   }
   .lookbook-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
     gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
   }
   /* Dossier & Sizing Modal: Mobile Compact Architecture */
   .modal-lookbook-container {
