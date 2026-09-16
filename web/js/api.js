@@ -53,6 +53,7 @@ const API = {
 
   // Inventory & Warehouse / Circuit Controls (Segment 3)
   getInventoryOverview: () => API.request('/api/inventory/overview'),
+  getLookbook: () => API.request('/api/inventory/lookbook'),
   getCircuitControls: () => API.request('/api/inventory/controls'),
   updateCircuitControl: (productId, key, value) => API.request('/api/inventory/controls/update', {
     method: 'POST',

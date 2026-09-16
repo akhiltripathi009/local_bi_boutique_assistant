@@ -32,7 +32,16 @@ const App = {
     competitorData: null,
     circuitControls: [],
     circuitCategory: 'All Categories',
-    simSelectedPid: ''
+    simSelectedPid: '',
+    lookbookState: {
+      items: [],
+      filtered: [],
+      activeCategory: 'ALL',
+      searchQuery: '',
+      sortMode: 'featured',
+      activeColors: {},
+      activeDossierItem: null
+    }
   },
 
   async init() {
@@ -70,6 +79,11 @@ const App = {
           BoutiqueTour.start();
         }
       }, 1500);
+    }
+
+    // Initialize draggable floating tour launcher
+    if (typeof BoutiqueTour !== 'undefined' && BoutiqueTour.initDraggableFab) {
+      BoutiqueTour.initDraggableFab();
     }
   },
 
@@ -181,6 +195,7 @@ const App = {
       this.loadLiveOpsData();
       setTimeout(() => this.resizeLiveArena(), 50);
     }
+    else if (tabId === 'tab-lookbook') this.loadLookbook();
     else if (tabId === 'tab-inventory') {
       this.loadInventoryData();
       this.loadCircuitControls();
@@ -3095,6 +3110,876 @@ const App = {
       state.shopper.hasBag = false;
     }
   }
+,
+  // ----------------------------------------------------
+  // ATELIER LOOKBOOK & INTERACTIVE COLORWAY STUDIO
+  // ----------------------------------------------------
+  async loadLookbook() {
+    try {
+      const res = await API.getLookbook();
+      const items = res.items || [];
+      this.state.lookbookState.items = items;
+
+      // Initialize default active colors for items if not already selected
+      items.forEach(item => {
+        if (!this.state.lookbookState.activeColors[item.product_id] && item.colorways && item.colorways.length > 0) {
+          this.state.lookbookState.activeColors[item.product_id] = {
+            hex: item.colorways[0].hex,
+            name: item.colorways[0].name
+          };
+        }
+      });
+
+      // Update banner metrics strip
+      const totalStylesEl = document.getElementById('lb-metric-total-styles');
+      const totalColorsEl = document.getElementById('lb-metric-total-colorways');
+      const activeOffersEl = document.getElementById('lb-metric-active-offers');
+
+      if (totalStylesEl) totalStylesEl.innerText = items.length;
+      if (totalColorsEl) {
+        const totalColorsCount = items.reduce((acc, it) => acc + (it.colorways ? it.colorways.length : 0), 0);
+        totalColorsEl.innerText = `${totalColorsCount}+`;
+      }
+      if (activeOffersEl) {
+        const offerCount = items.filter(it => it.has_offer).length;
+        activeOffersEl.innerText = offerCount > 0 ? `${offerCount} Active` : 'None';
+      }
+
+      this.filterAndRenderLookbook();
+    } catch (err) {
+      console.error('Failed to load Atelier Lookbook:', err);
+      if (typeof showToast === 'function') showToast('Error loading Haute Lookbook catalog', 'error');
+    }
+  },
+
+  filterAndRenderLookbook() {
+    const { items, activeCategory, searchQuery, sortMode } = this.state.lookbookState;
+    let filtered = [...items];
+
+    // Category filter
+    if (activeCategory && activeCategory !== 'ALL') {
+      filtered = filtered.filter(it => it.category === activeCategory);
+    }
+
+    // Search query filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(it => {
+        const nameMatch = (it.product_name || '').toLowerCase().includes(q);
+        const skuMatch = (it.product_id || '').toLowerCase().includes(q);
+        const catMatch = (it.category || '').toLowerCase().includes(q);
+        const fabMatch = (it.fabric?.composition || '').toLowerCase().includes(q) || (it.fabric?.weave || '').toLowerCase().includes(q);
+        const colorMatch = (it.colorways || []).some(c => c.name.toLowerCase().includes(q));
+        return nameMatch || skuMatch || catMatch || fabMatch || colorMatch;
+      });
+    }
+
+    // Sorting
+    if (sortMode === 'price_asc') {
+      filtered.sort((a, b) => (a.has_offer ? a.discounted_price : a.retail_price) - (b.has_offer ? b.discounted_price : b.retail_price));
+    } else if (sortMode === 'price_desc') {
+      filtered.sort((a, b) => (b.has_offer ? b.discounted_price : b.retail_price) - (a.has_offer ? a.discounted_price : a.retail_price));
+    } else if (sortMode === 'margin_desc') {
+      filtered.sort((a, b) => (b.gross_margin_pct || 0) - (a.gross_margin_pct || 0));
+    } else if (sortMode === 'offers') {
+      filtered.sort((a, b) => (b.has_offer ? 1 : 0) - (a.has_offer ? 1 : 0) || (b.discount_pct || 0) - (a.discount_pct || 0));
+    } else if (sortMode === 'stock_desc') {
+      filtered.sort((a, b) => (b.total_stock || 0) - (a.total_stock || 0));
+    } else {
+      // featured: product_id order
+      filtered.sort((a, b) => a.product_id.localeCompare(b.product_id));
+    }
+
+    this.state.lookbookState.filtered = filtered;
+    this.renderLookbookGrid();
+  },
+
+  renderLookbookGrid() {
+    const grid = document.getElementById('lookbook-garments-grid');
+    if (!grid) return;
+
+    const items = this.state.lookbookState.filtered || [];
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted);">
+          <div style="font-size:48px; margin-bottom:12px;">⚜️</div>
+          <h3 style="color:var(--gold); margin-bottom:6px; font-family:var(--font-serif);">No Haute Couture Silhouettes Found</h3>
+          <p style="font-size:14px; max-width:460px; margin:0 auto 16px;">No garments matched your current category or search criteria. Reset your search or filters to explore the full collection.</p>
+          <button class="btn btn-secondary" onclick="App.filterLookbook('ALL'); document.getElementById('lookbook-search-input').value=''; App.onLookbookSearch('');">Reset All Filters</button>
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = items.map(item => {
+      const activeColor = this.state.lookbookState.activeColors[item.product_id] || (item.colorways && item.colorways[0]) || { hex: '#2ecc71', name: 'Original' };
+      const svgArt = this.generateGarmentSVG(item, activeColor.hex, false, item.product_id);
+
+      // Offer Pill
+      const offerBadge = item.has_offer ? `
+        <div class="offer-pill">
+          <span class="offer-flame">🔥</span>
+          <span>${item.campaign_name || 'Exclusive Promo'}: -${Math.round(item.discount_pct)}% OFF</span>
+        </div>
+      ` : '';
+
+      // Price Row
+      let priceHtml = '';
+      if (item.has_offer) {
+        priceHtml = `
+          <div class="lookbook-price-row">
+            <span class="price-discounted">$${Number(item.discounted_price).toFixed(2)}</span>
+            <span class="price-original">$${Number(item.retail_price).toFixed(2)}</span>
+            <span class="price-savings">Save $${Number(item.savings).toFixed(2)}</span>
+          </div>
+        `;
+      } else {
+        priceHtml = `
+          <div class="lookbook-price-row">
+            <span class="price-regular">$${Number(item.retail_price).toFixed(2)}</span>
+            <span class="margin-tag">${item.gross_margin_pct}% Margin</span>
+          </div>
+        `;
+      }
+
+      // Swatches
+      const swatchesHtml = (item.colorways || []).map(c => {
+        const isCurrent = c.hex.toLowerCase() === activeColor.hex.toLowerCase();
+        return `
+          <button type="button" 
+            class="swatch-dot ${isCurrent ? 'active' : ''}" 
+            data-hex="${c.hex}"
+            style="background-color: ${c.hex};" 
+            title="${c.name} (${c.tone || c.hex})"
+            aria-label="Colorway ${c.name}"
+            onclick="App.applyGarmentColor('${item.product_id}', '${c.hex}', '${c.name.replace(/'/g, "\\'")}')">
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <article class="lookbook-card glass-card" id="lookbook-card-${item.product_id}">
+          <!-- Garment Visual Stage -->
+          <div class="garment-stage" id="garment-stage-${item.product_id}">
+            ${offerBadge}
+            <div class="stage-watermark">${item.category}</div>
+            <div class="garment-svg-wrap">
+              ${svgArt}
+            </div>
+          </div>
+
+          <!-- Garment Card Info Content -->
+          <div class="lookbook-card-body">
+            <div class="lookbook-meta-top">
+              <span class="badge-gold">${item.category}</span>
+              <span class="lookbook-sku-tag">SKU: ${item.product_id}</span>
+              <span class="stock-status-chip ${item.total_stock > 200 ? 'in-stock' : 'low-stock'}">
+                ${item.total_stock} in stock
+              </span>
+            </div>
+
+            <h3 class="lookbook-card-title">${item.product_name}</h3>
+            <p class="lookbook-card-silhouette">${item.silhouette}</p>
+
+            ${priceHtml}
+
+            <!-- Swatches & Color Customizer -->
+            <div class="colorway-selector-wrap">
+              <div class="colorway-label-row">
+                <span class="colorway-label-heading">Selected Shade:</span>
+                <span class="active-color-name" id="color-name-${item.product_id}">${activeColor.name}</span>
+              </div>
+              <div class="swatches-cluster">
+                ${swatchesHtml}
+              </div>
+            </div>
+
+            <!-- Fabric Quick Chips -->
+            <div class="fabric-specs-row">
+              <span class="fabric-spec-chip" title="Composition">🧵 ${item.fabric?.composition || 'Natural Fiber'}</span>
+              <span class="fabric-spec-chip" title="Material Weight">⚖️ ${item.fabric?.weight_gsm || 'Standard GSM'}</span>
+              <span class="fabric-spec-chip" title="Weave Type">✨ ${item.fabric?.weave || 'Artisan Weave'}</span>
+            </div>
+
+            <!-- Dual-Location Stock Summary -->
+            <div class="stock-loc-strip">
+              <span class="stock-loc-item">🏬 Floor Display: <b>${item.shop_stock}</b></span>
+              <span class="stock-loc-sep">•</span>
+              <span class="stock-loc-item">📦 Backroom Depot: <b>${item.warehouse_stock}</b></span>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="lookbook-card-actions">
+              <button class="btn btn-secondary btn-dossier" onclick="App.openLookbookDossier('${item.product_id}')">
+                🔬 Dossier & Sizing
+              </button>
+              <button class="btn btn-primary btn-replenish" onclick="App.quickTransferFromDossier('${item.product_id}')" title="Replenish from Warehouse to Floor">
+                ⚡ Replenish
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  },
+
+  applyGarmentColor(productId, hex, name, updateDossier = true) {
+    this.state.lookbookState.activeColors[productId] = { hex, name };
+
+    // Update fills on the card SVG
+    document.querySelectorAll(`.garment-fill-${productId}`).forEach(el => {
+      el.style.fill = hex;
+    });
+
+    // Update radial glow backdrop
+    const glowStop = document.getElementById(`glow-stop-${productId}`);
+    if (glowStop) {
+      glowStop.setAttribute('stop-color', hex);
+    }
+
+    // Update active swatch dot state on the card
+    const card = document.getElementById(`lookbook-card-${productId}`);
+    if (card) {
+      card.querySelectorAll('.swatch-dot').forEach(dot => {
+        dot.classList.toggle('active', (dot.dataset.hex || '').toLowerCase() === hex.toLowerCase());
+      });
+      const nameEl = document.getElementById(`color-name-${productId}`);
+      if (nameEl) nameEl.textContent = name;
+    }
+
+    // If dossier modal is active for this product, update it as well
+    if (updateDossier && this.state.lookbookState.activeDossierItem?.product_id === productId) {
+      document.querySelectorAll('.garment-fill-dossier').forEach(el => {
+        el.style.fill = hex;
+      });
+      const dossierGlow = document.getElementById('glow-stop-dossier');
+      if (dossierGlow) dossierGlow.setAttribute('stop-color', hex);
+
+      const dossierBody = document.getElementById('dossier-modal-body');
+      if (dossierBody) {
+        dossierBody.querySelectorAll('.swatch-dot').forEach(dot => {
+          dot.classList.toggle('active', (dot.dataset.hex || '').toLowerCase() === hex.toLowerCase());
+        });
+        const dossierNameEl = document.getElementById('dossier-active-color-name');
+        if (dossierNameEl) dossierNameEl.textContent = name;
+      }
+    }
+  },
+
+  filterLookbook(category) {
+    this.state.lookbookState.activeCategory = category;
+    document.querySelectorAll('.lookbook-cat-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.cat === category);
+    });
+    this.filterAndRenderLookbook();
+  },
+
+  onLookbookSearch(query) {
+    this.state.lookbookState.searchQuery = (query || '').trim();
+    this.filterAndRenderLookbook();
+  },
+
+  onLookbookSort(sortKey) {
+    this.state.lookbookState.sortMode = sortKey;
+    this.filterAndRenderLookbook();
+  },
+
+  openLookbookDossier(productId) {
+    const item = (this.state.lookbookState.items || []).find(it => it.product_id === productId);
+    if (!item) return;
+
+    this.state.lookbookState.activeDossierItem = item;
+    const activeColor = this.state.lookbookState.activeColors[item.product_id] || (item.colorways && item.colorways[0]) || { hex: '#2ecc71', name: 'Original' };
+
+    // Update modal header elements
+    const skuBadge = document.getElementById('dossier-sku-badge');
+    const catPill = document.getElementById('dossier-cat-pill');
+    const stockBadge = document.getElementById('dossier-stock-badge');
+    const titleEl = document.getElementById('dossier-product-title');
+
+    if (skuBadge) skuBadge.textContent = `SKU: ${item.product_id}`;
+    if (catPill) catPill.textContent = item.category;
+    if (stockBadge) {
+      stockBadge.textContent = `${item.total_stock} Units Available`;
+      stockBadge.className = `stock-badge ${item.total_stock > 150 ? 'in-stock' : 'low-stock'}`;
+    }
+    if (titleEl) titleEl.textContent = item.product_name;
+
+    // Generate large SVG visualizer
+    const largeSvg = this.generateGarmentSVG(item, activeColor.hex, true, 'dossier');
+
+    // Color swatches HTML for modal
+    const swatchesHtml = (item.colorways || []).map(c => {
+      const isCurrent = c.hex.toLowerCase() === activeColor.hex.toLowerCase();
+      return `
+        <button type="button" 
+          class="swatch-dot ${isCurrent ? 'active' : ''}" 
+          data-hex="${c.hex}"
+          style="background-color: ${c.hex};" 
+          title="${c.name} (${c.tone || c.hex})"
+          onclick="App.applyGarmentColor('${item.product_id}', '${c.hex}', '${c.name.replace(/'/g, "\\'")}')">
+        </button>
+      `;
+    }).join('');
+
+    // Sizing breakdown table rows
+    const sizes = ['S', 'M', 'L', 'XL'];
+    const sizeRowsHtml = sizes.map(sz => {
+      const sData = (item.size_breakdown && item.size_breakdown[sz]) || { shop_floor: 0, warehouse_reserve: 0, total: 0, available: false };
+      const statusText = sData.total > 20 ? 'In Stock' : (sData.total > 0 ? 'Low Stock' : 'Depleted');
+      const statusClass = sData.total > 20 ? 'status-in-stock' : (sData.total > 0 ? 'status-low-stock' : 'status-out');
+      return `
+        <tr>
+          <td style="font-weight:700; color:var(--gold-light);">${sz}</td>
+          <td style="text-align:center;"><b>${sData.shop_floor}</b></td>
+          <td style="text-align:center; color:var(--text-muted);">${sData.warehouse_reserve}</td>
+          <td style="text-align:center; font-weight:700;">${sData.total}</td>
+          <td style="text-align:right;"><span class="size-status-pill ${statusClass}">${statusText}</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    // Offer block inside modal
+    let offerSectionHtml = '';
+    if (item.has_offer) {
+      offerSectionHtml = `
+        <div class="dossier-offer-callout">
+          <div class="offer-callout-header">
+            <span class="offer-flame">🔥</span>
+            <b>${item.campaign_name || 'Active Campaign Offer'}</b>
+            <span class="badge-gold" style="margin-left:auto;">-${Math.round(item.discount_pct)}% OFF</span>
+          </div>
+          <div class="offer-callout-body">
+            <div class="offer-price-metric">
+              <span class="metric-lbl">Promotional Price:</span>
+              <span class="metric-val discounted">$${Number(item.discounted_price).toFixed(2)}</span>
+            </div>
+            <div class="offer-price-metric">
+              <span class="metric-lbl">Standard Retail:</span>
+              <span class="metric-val original">$${Number(item.retail_price).toFixed(2)}</span>
+            </div>
+            <div class="offer-price-metric">
+              <span class="metric-lbl">Client Savings:</span>
+              <span class="metric-val savings">$${Number(item.savings).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const modalBody = document.getElementById('dossier-modal-body');
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div class="dossier-grid">
+          <!-- Left Column: Visual Stage & Palette Studio -->
+          <div class="dossier-left-col">
+            <div class="dossier-stage-large" id="dossier-stage-large">
+              ${largeSvg}
+            </div>
+
+            <!-- Live Recoloring Studio in Modal -->
+            <div class="dossier-palette-box glass-card">
+              <div class="dossier-palette-header">
+                <span style="font-weight:600; font-size:13px;">Palette Colorway:</span>
+                <span class="active-color-name" id="dossier-active-color-name">${activeColor.name}</span>
+              </div>
+              <div class="swatches-cluster" style="margin-top:8px;">
+                ${swatchesHtml}
+              </div>
+            </div>
+
+            <!-- Commercial Margin Metrics -->
+            <div class="dossier-margin-strip glass-card">
+              <div class="margin-metric-item">
+                <span class="m-lbl">Retail Price</span>
+                <span class="m-val">$${Number(item.retail_price).toFixed(2)}</span>
+              </div>
+              <div class="margin-metric-item">
+                <span class="m-lbl">Wholesale Cost</span>
+                <span class="m-val" style="color:var(--text-muted);">$${Number(item.wholesale_cost).toFixed(2)}</span>
+              </div>
+              <div class="margin-metric-item">
+                <span class="m-lbl">Gross Margin</span>
+                <span class="m-val" style="color:var(--emerald);">${item.gross_margin_pct}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Fabric Tech Sheet, Sizing Matrix, Stylist Pairing -->
+          <div class="dossier-right-col">
+            ${offerSectionHtml}
+
+            <!-- Technical Fabric & Textile Dossier -->
+            <div class="dossier-section-block">
+              <h4 class="dossier-section-heading">🧵 Textile Engineering & Fabric Specifications</h4>
+              <table class="dossier-spec-table">
+                <tbody>
+                  <tr>
+                    <td class="spec-label">Composition</td>
+                    <td class="spec-value"><b>${item.fabric?.composition || 'Natural Luxury Fiber'}</b></td>
+                  </tr>
+                  <tr>
+                    <td class="spec-label">Material Weight</td>
+                    <td class="spec-value">${item.fabric?.weight_gsm || 'Standard GSM'}</td>
+                  </tr>
+                  <tr>
+                    <td class="spec-label">Weave & Texture</td>
+                    <td class="spec-value">${item.fabric?.weave || 'Atelier Custom Weave'}</td>
+                  </tr>
+                  <tr>
+                    <td class="spec-label">Tactile Handfeel</td>
+                    <td class="spec-value">${item.fabric?.handfeel || 'Silky soft, structured drape'}</td>
+                  </tr>
+                  <tr>
+                    <td class="spec-label">Care Instructions</td>
+                    <td class="spec-value">${item.fabric?.care || 'Delicate wash or specialized dry clean'}</td>
+                  </tr>
+                  <tr>
+                    <td class="spec-label">Mill Origin & Provenance</td>
+                    <td class="spec-value">${item.fabric?.origin || 'Milan Atelier Heritage Mills'}</td>
+                  </tr>
+                  <tr>
+                    <td class="spec-label">Sustainability</td>
+                    <td class="spec-value"><span class="badge-emerald" style="font-size:11px;">🌱 ${item.fabric?.sustainability || '100% Biodegradable & OEKO-TEX Certified'}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Dual Location Sizing Availability Matrix -->
+            <div class="dossier-section-block" style="margin-top:8px;">
+              <h4 class="dossier-section-heading">🏬 Sizing & Location Availability</h4>
+              <div class="table-responsive" style="margin-top:4px;">
+                <table class="dossier-size-table">
+                  <thead>
+                    <tr>
+                      <th>Size</th>
+                      <th style="text-align:center;">🏬 Floor</th>
+                      <th style="text-align:center;">📦 Reserve</th>
+                      <th style="text-align:center;">Total</th>
+                      <th style="text-align:right;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${sizeRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Haute Styling & Curated Pairings -->
+            <div class="dossier-section-block dossier-styling-card glass-card" style="margin-top:8px;">
+              <div class="styling-card-header">
+                <span>⚜️</span>
+                <b>Editorial Silhouette & Concierge Styling Notes</b>
+              </div>
+              <p class="styling-silhouette-desc"><b>Silhouette:</b> ${item.silhouette}</p>
+              <p class="styling-notes-text"><b>Concierge Pairing:</b> ${item.styling_notes}</p>
+              ${item.pairing_sku ? `
+                <div class="pairing-companion-row">
+                  <span class="text-muted" style="font-size:12px;">Recommended companion piece:</span>
+                  <button class="btn btn-secondary btn-sm" onclick="App.openLookbookDossier('${item.pairing_sku}')">
+                    👗 Inspect SKU ${item.pairing_sku}
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Display modal and lock body scrolling
+    const modal = document.getElementById('modal-lookbook-dossier');
+    if (modal) {
+      modal.classList.add('active');
+      document.body.classList.add('modal-open');
+    }
+  },
+
+  closeLookbookDossier() {
+    const modal = document.getElementById('modal-lookbook-dossier');
+    if (modal) modal.classList.remove('active');
+    document.body.classList.remove('modal-open');
+    this.state.lookbookState.activeDossierItem = null;
+  },
+
+  copyDossierStylingRecommendation() {
+    const item = this.state.lookbookState.activeDossierItem;
+    if (!item) return;
+
+    const text = `⚜️ Mishika Fashion VIP Concierge Styling Note:\nProduct: ${item.product_name} (${item.product_id})\nPrice: $${(item.has_offer ? item.discounted_price : item.retail_price).toFixed(2)}\nFabric: ${item.fabric?.composition || 'Natural Fiber'} (${item.fabric?.weight_gsm || ''})\nSilhouette: ${item.silhouette}\nStyling Advice: ${item.styling_notes}`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (typeof showToast === 'function') showToast('📋 Haute Couture styling recommendation copied to clipboard!', 'success');
+      }).catch(() => {
+        if (typeof showToast === 'function') showToast('Recommendation ready to share!', 'info');
+      });
+    } else {
+      if (typeof showToast === 'function') showToast('Recommendation ready to share!', 'info');
+    }
+  },
+
+  quickTransferFromDossier(productId) {
+    const pid = productId || this.state.lookbookState.activeDossierItem?.product_id;
+    if (!pid) return;
+
+    const item = (this.state.lookbookState.items || []).find(it => it.product_id === pid);
+    if (!item) return;
+
+    this.closeLookbookDossier();
+    this.switchTab('tab-inventory');
+
+    setTimeout(() => {
+      this.openTransferModal(item.product_id, item.product_name, item.shop_stock, item.warehouse_stock);
+      if (typeof showToast === 'function') showToast(`Ready to transfer stock for ${item.product_name} to Sales Floor!`);
+    }, 150);
+  },
+
+  generateGarmentSVG(item, currentColorHex, isLarge = false, targetId = '') {
+    const pid = targetId || item.product_id;
+    const color = currentColorHex || '#2ecc71';
+    const targetClass = `garment-fill-${pid} garment-fill-target`;
+    const w = isLarge ? 300 : 240;
+    const h = isLarge ? 380 : 300;
+    const viewBox = isLarge ? "0 0 300 380" : "0 0 240 300";
+    const scale = isLarge ? 1.25 : 1.0;
+    const transX = isLarge ? 0 : 0;
+    const transY = isLarge ? 6 : 0;
+
+    let paths = '';
+    const cat = item.category || 'Dresses';
+    const id = item.product_id;
+
+    if (cat === 'Dresses') {
+      if (id === 'P009') {
+        // Boho Floral Maxi Dress (sweetheart, ruffle tiers)
+        paths = `
+          <!-- Spaghetti Straps -->
+          <line x1="94" y1="36" x2="94" y2="62" stroke="${color}" stroke-width="3" class="${targetClass}" />
+          <line x1="146" y1="36" x2="146" y2="62" stroke="${color}" stroke-width="3" class="${targetClass}" />
+          <!-- Smocked Bodice -->
+          <path class="${targetClass}" d="M 88 62 Q 120 74 152 62 L 148 114 Q 120 120 92 114 Z" fill="${color}" />
+          <path d="M 90 74 Q 120 82 150 74 M 91 86 Q 120 94 149 86 M 92 98 Q 120 106 148 98" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" stroke-dasharray="2 2" fill="none" />
+          <!-- Tier 1 Skirt -->
+          <path class="${targetClass}" d="M 91 114 Q 68 150 62 180 Q 120 190 178 180 Q 172 150 149 114 Z" fill="${color}" />
+          <path d="M 62 180 Q 120 190 178 180" stroke="rgba(0,0,0,0.25)" stroke-width="3" fill="none" />
+          <!-- Tier 2 Maxi Hem -->
+          <path class="${targetClass}" d="M 60 180 Q 45 225 36 274 Q 120 290 204 274 Q 195 225 180 180 Z" fill="${color}" />
+          <path d="M 90 185 Q 98 230 100 278 M 150 185 Q 142 230 140 278" stroke="rgba(0,0,0,0.2)" stroke-width="1.8" fill="none" />
+          <path d="M 60 180 Q 45 225 36 274 Q 120 290 204 274 Q 195 225 180 180 Z" fill="url(#sheen-${pid})" opacity="0.3" pointer-events="none" />
+        `;
+      } else if (id === 'P015') {
+        // Asymmetrical Knit Midi Dress (one-shoulder architectural contour)
+        paths = `
+          <!-- One Shoulder Strap -->
+          <path class="${targetClass}" d="M 88 52 L 108 34 L 118 48 L 96 68 Z" fill="${color}" />
+          <!-- Contoured Bodice & Drape -->
+          <path class="${targetClass}" d="M 96 68 L 148 78 L 144 140 L 88 140 Z" fill="${color}" />
+          <!-- Ruching Drapes -->
+          <path d="M 88 95 Q 115 105 146 95 M 88 115 Q 115 125 144 115 M 88 135 Q 115 145 144 135" stroke="rgba(0,0,0,0.22)" stroke-width="1.5" fill="none" />
+          <!-- Asymmetric Flared Skirt -->
+          <path class="${targetClass}" d="M 88 140 Q 64 210 52 280 L 194 240 Q 172 195 144 140 Z" fill="${color}" />
+          <path d="M 88 140 Q 64 210 52 280 L 194 240 Q 172 195 144 140 Z" fill="url(#sheen-${pid})" opacity="0.32" pointer-events="none" />
+        `;
+      } else if (id === 'P019') {
+        // Smocked Waist Tiered Sun Dress
+        paths = `
+          <!-- Shoulder Tie Straps with Bows -->
+          <line x1="92" y1="36" x2="92" y2="65" stroke="${color}" stroke-width="3" class="${targetClass}" />
+          <line x1="148" y1="36" x2="148" y2="65" stroke="${color}" stroke-width="3" class="${targetClass}" />
+          <circle cx="92" cy="36" r="3" fill="${color}" class="${targetClass}" />
+          <circle cx="148" cy="36" r="3" fill="${color}" class="${targetClass}" />
+          <!-- Square Neck Bodice -->
+          <path class="${targetClass}" d="M 88 65 L 152 65 L 146 110 L 94 110 Z" fill="${color}" />
+          <!-- Elastic Shirred Waist -->
+          <rect class="${targetClass}" x="90" y="110" width="60" height="20" fill="${color}" />
+          <line x1="90" y1="115" x2="150" y2="115" stroke="rgba(255,255,255,0.4)" stroke-dasharray="2 2" stroke-width="1.2" />
+          <line x1="90" y1="120" x2="150" y2="120" stroke="rgba(255,255,255,0.4)" stroke-dasharray="2 2" stroke-width="1.2" />
+          <line x1="90" y1="125" x2="150" y2="125" stroke="rgba(255,255,255,0.4)" stroke-dasharray="2 2" stroke-width="1.2" />
+          <!-- Tiered Summer Hem -->
+          <path class="${targetClass}" d="M 90 130 Q 64 195 46 270 Q 120 285 194 270 Q 176 195 150 130 Z" fill="${color}" />
+          <path d="M 62 205 Q 120 218 178 205" stroke="rgba(0,0,0,0.2)" stroke-width="2.5" fill="none" />
+          <path d="M 90 130 Q 64 195 46 270 Q 120 285 194 270 Q 176 195 150 130 Z" fill="url(#sheen-${pid})" opacity="0.28" pointer-events="none" />
+        `;
+      } else {
+        // P001 & Classic Wrap Dress
+        paths = `
+          <!-- Wrap Bodice -->
+          <path class="${targetClass}" d="M 85 52 L 120 52 L 138 126 L 86 126 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 120 52 L 155 52 L 154 126 L 102 126 Z" fill="${color}" />
+          <path d="M 120 52 L 102 126 L 108 126 L 122 52 Z" fill="rgba(0,0,0,0.18)" />
+          <!-- Belt & Bow Sash -->
+          <rect class="${targetClass}" x="82" y="122" width="76" height="10" rx="3" fill="${color}" />
+          <rect x="82" y="130" width="76" height="2" fill="rgba(0,0,0,0.2)" />
+          <path class="${targetClass}" d="M 132 126 Q 148 142 144 175 Q 138 155 132 136 Z" fill="${color}" />
+          <!-- Tulip A-Line Skirt -->
+          <path class="${targetClass}" d="M 83 132 Q 62 195 48 268 Q 120 282 192 268 Q 178 195 157 132 Z" fill="${color}" />
+          <path d="M 104 132 Q 135 190 160 268" stroke="rgba(0,0,0,0.22)" stroke-width="2" fill="none" />
+          <path d="M 70 200 Q 82 235 88 270" stroke="rgba(0,0,0,0.15)" stroke-width="2" fill="none" />
+          <path d="M 168 200 Q 158 235 152 270" stroke="rgba(0,0,0,0.15)" stroke-width="2" fill="none" />
+          <path d="M 83 132 Q 62 195 48 268 Q 120 282 192 268 Q 178 195 157 132 Z" fill="url(#sheen-${pid})" opacity="0.32" pointer-events="none" />
+        `;
+      }
+    } else if (cat === 'Outerwear') {
+      if (id === 'P018') {
+        // Suede Moto Jacket (asymmetric diagonal zip, snap lapels)
+        paths = `
+          <!-- Main Moto Body -->
+          <path class="${targetClass}" d="M 68 62 L 172 62 L 176 160 L 170 220 L 70 220 L 64 160 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 68 62 L 44 135 L 48 225 L 64 223 L 66 155 L 70 76 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 172 62 L 196 135 L 192 225 L 176 223 L 174 155 L 170 76 Z" fill="${color}" />
+          <!-- Asymmetrical Moto Collar & Revers -->
+          <path class="${targetClass}" d="M 86 52 L 68 90 L 110 102 L 96 52 Z" fill="${color}" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" />
+          <path class="${targetClass}" d="M 154 52 L 172 90 L 126 102 L 144 52 Z" fill="${color}" stroke="rgba(0,0,0,0.25)" stroke-width="1.2" />
+          <!-- Silver Rivet Snaps -->
+          <circle cx="74" cy="85" r="2.8" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
+          <circle cx="166" cy="85" r="2.8" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
+          <!-- Diagonal Zipper Track -->
+          <line x1="110" y1="102" x2="135" y2="220" stroke="#cbd5e1" stroke-width="2.2" stroke-dasharray="3 1" />
+          <!-- Biker Belt with Silver Buckle -->
+          <rect class="${targetClass}" x="68" y="210" width="104" height="12" rx="2" fill="${color}" stroke="rgba(0,0,0,0.25)" stroke-width="1" />
+          <rect x="114" y="208" width="14" height="16" rx="2" fill="none" stroke="#e2e8f0" stroke-width="2.2" />
+        `;
+      } else if (id === 'P004') {
+        // Denim Trucker Jacket
+        paths = `
+          <!-- Collar -->
+          <path class="${targetClass}" d="M 94 48 L 120 62 L 146 48 L 138 68 L 102 68 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <!-- Body -->
+          <path class="${targetClass}" d="M 68 62 L 172 62 L 170 215 L 70 215 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 68 62 L 44 135 L 48 220 L 64 218 L 66 155 L 70 76 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 172 62 L 196 135 L 192 220 L 176 218 L 174 155 L 170 76 Z" fill="${color}" />
+          <!-- Contrast Stitching Yoke -->
+          <line x1="68" y1="98" x2="172" y2="98" stroke="rgba(212,175,55,0.6)" stroke-width="1.4" stroke-dasharray="3 2" />
+          <!-- Chest Flap Pockets -->
+          <path class="${targetClass}" d="M 76 106 L 104 106 L 104 135 L 90 142 L 76 135 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <path class="${targetClass}" d="M 136 106 L 164 106 L 164 135 L 150 142 L 136 135 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <!-- Metal Shank Buttons -->
+          <circle cx="90" cy="115" r="2.8" fill="#d4af37" stroke="#785b12" stroke-width="1" />
+          <circle cx="150" cy="115" r="2.8" fill="#d4af37" stroke="#785b12" stroke-width="1" />
+          <circle cx="120" cy="112" r="3" fill="#d4af37" stroke="#785b12" stroke-width="1" />
+          <circle cx="120" cy="142" r="3" fill="#d4af37" stroke="#785b12" stroke-width="1" />
+          <circle cx="120" cy="172" r="3" fill="#d4af37" stroke="#785b12" stroke-width="1" />
+          <circle cx="120" cy="202" r="3" fill="#d4af37" stroke="#785b12" stroke-width="1" />
+        `;
+      } else {
+        // P008 Trench & P010 Tailored Double-Breasted Blazer
+        paths = `
+          <!-- Collar -->
+          <path class="${targetClass}" d="M 94 48 L 146 48 L 140 64 L 100 64 Z" fill="${color}" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 68 62 L 172 62 L 180 160 L 182 255 L 58 255 L 60 160 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 68 62 L 44 140 L 48 232 L 64 230 L 66 160 L 70 76 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 172 62 L 196 140 L 192 232 L 176 230 L 174 160 L 170 76 Z" fill="${color}" />
+          <!-- Peak Lapels -->
+          <path class="${targetClass}" d="M 96 50 L 74 88 L 106 112 L 106 168 L 68 162 L 64 68 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <path class="${targetClass}" d="M 144 50 L 166 88 L 134 112 L 134 168 L 172 162 L 176 68 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <path d="M 106 112 L 134 112 L 134 255 L 106 255 Z" fill="rgba(0,0,0,0.14)" />
+          <!-- Gold Buttons (Double Breasted) -->
+          <circle cx="112" cy="130" r="4" fill="#d4af37" stroke="#785b12" stroke-width="1.2" />
+          <circle cx="128" cy="130" r="4" fill="#d4af37" stroke="#785b12" stroke-width="1.2" />
+          <circle cx="112" cy="155" r="4" fill="#d4af37" stroke="#785b12" stroke-width="1.2" />
+          <circle cx="128" cy="155" r="4" fill="#d4af37" stroke="#785b12" stroke-width="1.2" />
+          <circle cx="112" cy="180" r="4" fill="#d4af37" stroke="#785b12" stroke-width="1.2" />
+          <circle cx="128" cy="180" r="4" fill="#d4af37" stroke="#785b12" stroke-width="1.2" />
+          <!-- Flap Pockets -->
+          <rect class="${targetClass}" x="68" y="195" width="28" height="8" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <rect class="${targetClass}" x="144" y="195" width="28" height="8" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <!-- Silk Pocket Square -->
+          <path d="M 76 112 L 96 112" stroke="rgba(0,0,0,0.3)" stroke-width="2" />
+          <polygon points="82,112 86,104 90,112" fill="#ffffff" opacity="0.9" />
+          <path d="M 68 62 L 172 62 L 180 160 L 182 255 L 58 255 L 60 160 Z" fill="url(#sheen-${pid})" opacity="0.3" pointer-events="none" />
+        `;
+      }
+    } else if (cat === 'Tops') {
+      if (id === 'P003' || id === 'P017') {
+        // Ribbed Tank or Silk Lace Cami
+        paths = `
+          <!-- Delicate Spaghetti Straps -->
+          <line x1="92" y1="36" x2="92" y2="70" stroke="${color}" stroke-width="2.5" class="${targetClass}" />
+          <line x1="148" y1="36" x2="148" y2="70" stroke="${color}" stroke-width="2.5" class="${targetClass}" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 88 70 Q 120 86 152 70 L 148 215 Q 120 220 92 215 Z" fill="${color}" />
+          <!-- Eyelash Lace Scallops -->
+          <path d="M 90 70 Q 120 86 150 70" stroke="#ffffff" stroke-width="2" stroke-dasharray="2 2" fill="none" opacity="0.8" />
+          <!-- Vertical Ribs -->
+          <line x1="105" y1="80" x2="104" y2="216" stroke="rgba(0,0,0,0.1)" stroke-width="1" />
+          <line x1="120" y1="86" x2="120" y2="218" stroke="rgba(0,0,0,0.1)" stroke-width="1" />
+          <line x1="135" y1="80" x2="136" y2="216" stroke="rgba(0,0,0,0.1)" stroke-width="1" />
+          <path d="M 88 70 Q 120 86 152 70 L 148 215 Q 120 220 92 215 Z" fill="url(#sheen-${pid})" opacity="0.3" pointer-events="none" />
+        `;
+      } else if (id === 'P020') {
+        // Heavyweight Cotton Drawstring Hoodie
+        paths = `
+          <!-- Sculpted Hood -->
+          <path class="${targetClass}" d="M 88 42 Q 120 30 152 42 Q 165 72 144 82 Q 120 94 96 82 Q 75 72 88 42 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <!-- Drawstrings -->
+          <path d="M 112 84 Q 110 110 108 128" stroke="#f1f5f9" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <path d="M 128 84 Q 130 110 132 128" stroke="#f1f5f9" stroke-width="2.5" fill="none" stroke-linecap="round" />
+          <circle cx="108" cy="128" r="2" fill="#d4af37" />
+          <circle cx="132" cy="128" r="2" fill="#d4af37" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 72 75 L 168 75 L 164 215 L 76 215 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 72 75 L 48 135 L 52 205 L 68 203 L 74 140 L 76 85 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 168 75 L 192 135 L 188 205 L 172 203 L 166 140 L 164 85 Z" fill="${color}" />
+          <!-- Kangaroo Pouch -->
+          <path class="${targetClass}" d="M 90 155 L 150 155 L 158 198 L 82 198 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <line x1="90" y1="155" x2="82" y2="198" stroke="rgba(0,0,0,0.25)" stroke-width="2" />
+          <line x1="150" y1="155" x2="158" y2="198" stroke="rgba(0,0,0,0.25)" stroke-width="2" />
+          <!-- Ribbed Waist -->
+          <rect class="${targetClass}" x="74" y="215" width="92" height="15" rx="3" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+        `;
+      } else {
+        // Classic Poplin Buttondown & Chambray Shirt (P007, P013)
+        paths = `
+          <!-- Point Collar -->
+          <path class="${targetClass}" d="M 98 46 L 120 60 L 142 46 L 132 68 L 108 68 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 76 60 L 164 60 L 160 215 Q 120 228 80 215 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 76 60 L 52 135 L 56 205 L 70 203 L 74 140 L 76 75 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 164 60 L 188 135 L 184 205 L 170 203 L 166 140 L 164 75 Z" fill="${color}" />
+          <!-- Front Placket -->
+          <rect class="${targetClass}" x="115" y="60" width="10" height="158" fill="${color}" stroke="rgba(0,0,0,0.15)" stroke-width="1" />
+          <!-- Pearl Buttons -->
+          <circle cx="120" cy="85" r="2.5" fill="#ffffff" stroke="#94a3b8" stroke-width="1" />
+          <circle cx="120" cy="115" r="2.5" fill="#ffffff" stroke="#94a3b8" stroke-width="1" />
+          <circle cx="120" cy="145" r="2.5" fill="#ffffff" stroke="#94a3b8" stroke-width="1" />
+          <circle cx="120" cy="175" r="2.5" fill="#ffffff" stroke="#94a3b8" stroke-width="1" />
+          <circle cx="120" cy="205" r="2.5" fill="#ffffff" stroke="#94a3b8" stroke-width="1" />
+          <!-- Patch Pocket -->
+          <path class="${targetClass}" d="M 134 100 L 154 100 L 154 122 L 144 128 L 134 122 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+        `;
+      }
+    } else if (cat === 'Bottoms') {
+      if (id === 'P002' || id === 'P012') {
+        // Silk Slip Skirt or Satin Pleated Midi Skirt
+        paths = `
+          <!-- High Waistband -->
+          <rect class="${targetClass}" x="86" y="58" width="68" height="12" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <!-- Flowing Skirt -->
+          <path class="${targetClass}" d="M 86 70 Q 64 165 48 270 Q 120 286 192 270 Q 176 165 154 70 Z" fill="${color}" />
+          <!-- Pleat Lines / Silk Shimmer Folds -->
+          <path d="M 94 72 Q 78 170 70 273 M 108 72 Q 100 170 98 276 M 120 72 Q 120 170 120 278 M 132 72 Q 140 170 142 276 M 146 72 Q 162 170 170 273" stroke="rgba(0,0,0,0.2)" stroke-width="1.6" fill="none" />
+          <path d="M 86 70 Q 64 165 48 270 Q 120 286 192 270 Q 176 165 154 70 Z" fill="url(#sheen-${pid})" opacity="0.4" pointer-events="none" />
+        `;
+      } else {
+        // Wide Leg Trouser & Straight Denim (P006, P016)
+        paths = `
+          <!-- Waistband -->
+          <rect class="${targetClass}" x="80" y="55" width="80" height="15" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <!-- Belt Loops -->
+          <line x1="88" y1="55" x2="88" y2="70" stroke="rgba(0,0,0,0.3)" stroke-width="2" />
+          <line x1="112" y1="55" x2="112" y2="70" stroke="rgba(0,0,0,0.3)" stroke-width="2" />
+          <line x1="128" y1="55" x2="128" y2="70" stroke="rgba(0,0,0,0.3)" stroke-width="2" />
+          <line x1="152" y1="55" x2="152" y2="70" stroke="rgba(0,0,0,0.3)" stroke-width="2" />
+          <circle cx="120" cy="62" r="3" fill="#d4af37" />
+          <!-- Fly -->
+          <path d="M 120 70 L 120 115 Q 120 125 116 128" stroke="rgba(0,0,0,0.3)" stroke-width="1.5" fill="none" />
+          <!-- Legs -->
+          <path class="${targetClass}" d="M 80 70 L 68 275 L 115 275 L 118 130 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 160 70 L 172 275 L 125 275 L 122 130 Z" fill="${color}" />
+          <path d="M 118 130 Q 120 140 122 130" stroke="rgba(0,0,0,0.25)" stroke-width="2" fill="none" />
+          <!-- Ironed Crease Pleats -->
+          <line x1="94" y1="80" x2="91" y2="274" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" />
+          <line x1="146" y1="80" x2="149" y2="274" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" />
+          <!-- Slanted Pockets -->
+          <line x1="80" y1="80" x2="94" y2="70" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" />
+          <line x1="160" y1="80" x2="146" y2="70" stroke="rgba(0,0,0,0.25)" stroke-width="1.5" />
+        `;
+      }
+    } else {
+      // Knitwear (P005, P011, P014)
+      if (id === 'P011') {
+        // Cable Knit Vest
+        paths = `
+          <!-- V-neck Rib Collar -->
+          <path class="${targetClass}" d="M 94 48 L 120 80 L 146 48 L 136 48 L 120 68 L 104 48 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <!-- Armholes -->
+          <path d="M 78 52 Q 90 95 80 135" stroke="rgba(0,0,0,0.25)" stroke-width="2.5" fill="none" />
+          <path d="M 162 52 Q 150 95 160 135" stroke="rgba(0,0,0,0.25)" stroke-width="2.5" fill="none" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 78 52 L 162 52 L 158 190 L 82 190 Z" fill="${color}" />
+          <!-- Cable Knit Chevron Texture -->
+          <path d="M 108 85 L 114 95 L 108 105 L 114 115 L 108 125 L 114 135 L 108 145 M 132 85 L 126 95 L 132 105 L 126 115 L 132 125 L 126 135 L 132 145" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" fill="none" />
+          <!-- Waistband -->
+          <rect class="${targetClass}" x="80" y="190" width="80" height="16" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+        `;
+      } else if (id === 'P014') {
+        // Merino Cardigan
+        paths = `
+          <!-- V Placket -->
+          <path class="${targetClass}" d="M 92 48 L 120 100 L 148 48 L 138 48 L 120 88 L 102 48 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 72 56 L 168 56 L 164 212 L 76 212 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 72 56 L 46 130 L 50 205 L 66 203 L 72 135 L 74 72 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 168 56 L 194 130 L 190 205 L 174 203 L 168 135 L 166 72 Z" fill="${color}" />
+          <!-- Tortoiseshell Buttons -->
+          <circle cx="120" cy="115" r="3.5" fill="#451a03" stroke="#d4af37" stroke-width="1" />
+          <circle cx="120" cy="145" r="3.5" fill="#451a03" stroke="#d4af37" stroke-width="1" />
+          <circle cx="120" cy="175" r="3.5" fill="#451a03" stroke="#d4af37" stroke-width="1" />
+          <circle cx="120" cy="205" r="3.5" fill="#451a03" stroke="#d4af37" stroke-width="1" />
+          <!-- Patch Pockets -->
+          <rect class="${targetClass}" x="80" y="165" width="22" height="22" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <rect class="${targetClass}" x="138" y="165" width="22" height="22" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+        `;
+      } else {
+        // P005 Cashmere Crewneck
+        paths = `
+          <!-- Ribbed Crew Collar -->
+          <path class="${targetClass}" d="M 96 46 Q 120 62 144 46 Q 120 40 96 46 Z" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1.2" />
+          <line x1="100" y1="52" x2="72" y2="78" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" />
+          <line x1="140" y1="52" x2="168" y2="78" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" />
+          <!-- Torso -->
+          <path class="${targetClass}" d="M 72 58 L 168 58 L 164 210 L 76 210 Z" fill="${color}" />
+          <!-- Sleeves -->
+          <path class="${targetClass}" d="M 72 58 L 46 130 L 50 205 L 66 203 L 72 135 L 74 72 Z" fill="${color}" />
+          <path class="${targetClass}" d="M 168 58 L 194 130 L 190 205 L 174 203 L 168 135 L 166 72 Z" fill="${color}" />
+          <!-- Hem Rib -->
+          <rect class="${targetClass}" x="75" y="210" width="90" height="14" rx="2" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1" />
+          <path d="M 72 58 L 168 58 L 164 210 L 76 210 Z" fill="url(#sheen-${pid})" opacity="0.32" pointer-events="none" />
+        `;
+      }
+    }
+
+    return `
+      <svg viewBox="${viewBox}" width="100%" height="100%" class="garment-vector-art" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="glow-${pid}" cx="50%" cy="35%" r="60%">
+            <stop id="glow-stop-${pid}" offset="0%" stop-color="${color}" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="${color}" stop-opacity="0" />
+          </radialGradient>
+          <linearGradient id="sheen-${pid}" x1="15%" y1="0%" x2="85%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+            <stop offset="45%" stop-color="#ffffff" stop-opacity="0.08" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="0.2" />
+          </linearGradient>
+        </defs>
+
+        <!-- Ambient Backdrop Spotlight Glow -->
+        <rect width="100%" height="100%" rx="12" fill="url(#glow-${pid})" />
+
+        <!-- Atelier Brass Hanger -->
+        <g opacity="0.75" class="atelier-hanger">
+          <path d="M 120 22 C 120 12 129 12 129 18 C 129 24 120 25 120 34" stroke="#d4af37" stroke-width="2.2" stroke-linecap="round" fill="none" />
+          <path d="M 72 48 Q 120 36 168 48 L 166 52 Q 120 40 74 52 Z" fill="#bfa15f" />
+        </g>
+
+        <!-- Garment Vector Silhouette Paths -->
+        <g transform="scale(${scale}) translate(${transX}, ${transY})">
+          ${paths}
+        </g>
+      </svg>
+    `;
+  }
+
 };
 
 // Start application when DOM is ready

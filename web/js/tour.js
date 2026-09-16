@@ -164,28 +164,68 @@ const BoutiqueTour = {
       document.head.appendChild(style);
     }
     style.textContent = `
-      /* 1. Floating Tour Launcher */
+      /* 1. Floating Tour Launcher (Moveable & Drag-Supported) */
       .fab-tour-launcher {
         position: fixed !important;
-        bottom: 26px !important;
-        right: 26px !important;
+        bottom: 96px !important;
+        right: 24px !important;
         width: 56px !important;
         height: 56px !important;
         border-radius: 50% !important;
         background: linear-gradient(135deg, #fde047 0%, #d4af37 50%, #aa820a 100%) !important;
         border: 2px solid rgba(255, 255, 255, 0.5) !important;
         box-shadow: 0 8px 28px rgba(212, 175, 55, 0.5), 0 0 16px rgba(212, 175, 55, 0.3) !important;
-        cursor: pointer !important;
-        z-index: 9999 !important;
+        cursor: grab !important;
+        touch-action: none !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        z-index: 1050 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
         outline: none !important;
       }
       .fab-tour-launcher:hover {
-        transform: scale(1.12) translateY(-3px) !important;
+        transform: scale(1.1) translateY(-2px) !important;
         box-shadow: 0 14px 34px rgba(212, 175, 55, 0.65), 0 0 24px rgba(212, 175, 55, 0.45) !important;
+      }
+      .fab-tour-launcher:active {
+        cursor: grabbing !important;
+      }
+      .fab-tour-launcher.is-dragging {
+        cursor: grabbing !important;
+        transition: none !important;
+        transform: scale(1.15) !important;
+        box-shadow: 0 20px 45px rgba(212, 175, 55, 0.8), 0 0 32px rgba(212, 175, 55, 0.6) !important;
+        z-index: 10005 !important;
+      }
+      .fab-tour-grip {
+        position: absolute !important;
+        bottom: 3px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        font-size: 8px !important;
+        letter-spacing: 1px !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+        pointer-events: none !important;
+        opacity: 0.65 !important;
+      }
+      .fab-tour-launcher:hover .fab-tour-grip {
+        opacity: 1 !important;
+      }
+      @media (max-width: 768px) {
+        .fab-tour-launcher {
+          bottom: calc(88px + var(--sab, 0px)) !important;
+          right: 14px !important;
+          width: 48px !important;
+          height: 48px !important;
+        }
+        .fab-tour-icon {
+          font-size: 22px !important;
+        }
       }
       .fab-tour-icon {
         font-size: 26px !important;
@@ -825,6 +865,221 @@ const BoutiqueTour = {
   },
 
   /**
+   * Initializes draggable/moveable behavior for the floating tour launcher button.
+   * Supports Pointer Events (mouse and touch), boundary clamping, click suppression, and position persistence.
+   */
+  initDraggableFab() {
+    const fab = document.getElementById('fab-tour-launcher');
+    if (!fab || fab._draggableInitialized) return;
+    fab._draggableInitialized = true;
+
+    // Restore previously saved position from localStorage
+    this.restoreFabPosition(fab);
+
+    let isPointerDown = false;
+    let hasMoved = false;
+    let startPointerX = 0;
+    let startPointerY = 0;
+    let startFabLeft = 0;
+    let startFabTop = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    const onPointerMove = (e) => {
+      if (!isPointerDown) return;
+
+      const deltaX = e.clientX - startPointerX;
+      const deltaY = e.clientY - startPointerY;
+
+      if (!hasMoved) {
+        if (Math.hypot(deltaX, deltaY) > 5) {
+          hasMoved = true;
+          fab.classList.add('is-dragging');
+        } else {
+          return;
+        }
+      }
+
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+
+      const targetLeft = startFabLeft + deltaX;
+      const targetTop = startFabTop + deltaY;
+
+      const fabWidth = fab.offsetWidth || 54;
+      const fabHeight = fab.offsetHeight || 54;
+      const minX = 8;
+      const maxX = Math.max(minX, window.innerWidth - fabWidth - 8);
+      const minY = 8;
+      const maxY = Math.max(minY, window.innerHeight - fabHeight - 8);
+
+      currentX = Math.min(Math.max(targetLeft, minX), maxX);
+      currentY = Math.min(Math.max(targetTop, minY), maxY);
+
+      fab.style.setProperty('left', `${currentX}px`, 'important');
+      fab.style.setProperty('top', `${currentY}px`, 'important');
+      fab.style.setProperty('right', 'auto', 'important');
+      fab.style.setProperty('bottom', 'auto', 'important');
+    };
+
+    const onPointerUp = (e) => {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+
+      try {
+        fab.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+
+      fab.classList.remove('is-dragging');
+
+      if (hasMoved) {
+        this._justDragged = true;
+        setTimeout(() => {
+          this._justDragged = false;
+        }, 250);
+
+        try {
+          localStorage.setItem('boutique_tour_fab_pos', JSON.stringify({
+            x: Math.round(currentX),
+            y: Math.round(currentY)
+          }));
+        } catch (_) {}
+      }
+    };
+
+    const onPointerDown = (e) => {
+      // Primary button (mouse) or touch only
+      if (e.button !== undefined && e.button !== 0) return;
+
+      isPointerDown = true;
+      hasMoved = false;
+      this._justDragged = false;
+
+      startPointerX = e.clientX;
+      startPointerY = e.clientY;
+
+      const rect = fab.getBoundingClientRect();
+      startFabLeft = rect.left;
+      startFabTop = rect.top;
+      currentX = rect.left;
+      currentY = rect.top;
+
+      try {
+        fab.setPointerCapture(e.pointerId);
+      } catch (_) {}
+
+      window.addEventListener('pointermove', onPointerMove, { passive: false });
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    };
+
+    fab.addEventListener('pointerdown', onPointerDown);
+
+    // Double-click to reset position back to default
+    fab.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.resetFabPosition(fab);
+    });
+
+    // Window resize boundary protection
+    window.addEventListener('resize', () => {
+      this.clampFabToBounds(fab);
+    });
+  },
+
+  /**
+   * Clamps FAB position to stay within viewport on screen resize.
+   */
+  clampFabToBounds(fab) {
+    if (!fab) fab = document.getElementById('fab-tour-launcher');
+    if (!fab) return;
+    if (fab.style.left && fab.style.left !== 'auto') {
+      const rect = fab.getBoundingClientRect();
+      const fabWidth = fab.offsetWidth || 54;
+      const fabHeight = fab.offsetHeight || 54;
+      const minX = 8;
+      const maxX = Math.max(minX, window.innerWidth - fabWidth - 8);
+      const minY = 8;
+      const maxY = Math.max(minY, window.innerHeight - fabHeight - 8);
+
+      const clampedX = Math.min(Math.max(rect.left, minX), maxX);
+      const clampedY = Math.min(Math.max(rect.top, minY), maxY);
+
+      fab.style.setProperty('left', `${clampedX}px`, 'important');
+      fab.style.setProperty('top', `${clampedY}px`, 'important');
+      fab.style.setProperty('right', 'auto', 'important');
+      fab.style.setProperty('bottom', 'auto', 'important');
+    }
+  },
+
+  /**
+   * Restores previously saved coordinates from localStorage.
+   */
+  restoreFabPosition(fab) {
+    if (!fab) return;
+    try {
+      const saved = localStorage.getItem('boutique_tour_fab_pos');
+      if (saved) {
+        const { x, y } = JSON.parse(saved);
+        if (typeof x === 'number' && typeof y === 'number') {
+          const fabWidth = fab.offsetWidth || 54;
+          const fabHeight = fab.offsetHeight || 54;
+          const minX = 8;
+          const maxX = Math.max(minX, window.innerWidth - fabWidth - 8);
+          const minY = 8;
+          const maxY = Math.max(minY, window.innerHeight - fabHeight - 8);
+
+          const clampedX = Math.min(Math.max(x, minX), maxX);
+          const clampedY = Math.min(Math.max(y, minY), maxY);
+
+          fab.style.setProperty('left', `${clampedX}px`, 'important');
+          fab.style.setProperty('top', `${clampedY}px`, 'important');
+          fab.style.setProperty('right', 'auto', 'important');
+          fab.style.setProperty('bottom', 'auto', 'important');
+        }
+      }
+    } catch (_) {}
+  },
+
+  /**
+   * Resets button position to stylesheet default.
+   */
+  resetFabPosition(fab) {
+    if (!fab) fab = document.getElementById('fab-tour-launcher');
+    if (!fab) return;
+    try {
+      localStorage.removeItem('boutique_tour_fab_pos');
+    } catch (_) {}
+    fab.style.removeProperty('left');
+    fab.style.removeProperty('top');
+    fab.style.removeProperty('right');
+    fab.style.removeProperty('bottom');
+    if (typeof App !== 'undefined' && App.showToast) {
+      App.showToast('Tour button position reset to default');
+    }
+  },
+
+  /**
+   * Handles button click, preventing tour trigger if button was just dragged.
+   */
+  handleFabClick(e) {
+    if (this._justDragged) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      return;
+    }
+    this.start();
+  },
+
+  /**
    * Automatically observes DOM data-theme changes to keep tour popup in sync.
    */
   initThemeObserver() {
@@ -1225,6 +1480,7 @@ if (typeof document !== 'undefined') {
     BoutiqueTour.injectStyles();
     BoutiqueTour.initThemeObserver();
     BoutiqueTour.updateTheme();
+    BoutiqueTour.initDraggableFab();
   };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initTour);

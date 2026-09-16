@@ -630,7 +630,7 @@ body {
   backdrop-filter: blur(20px);
   border-left: 1px solid var(--border-card);
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
-  z-index: 300;
+  z-index: 1100;
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
@@ -1386,33 +1386,62 @@ body {
    INTERACTIVE ARCHITECTURE TOUR (LUXURY COMPACT POPUP)
    ========================================== */
 
-/* 1. Floating Action Button (Icon Only) */
+/* 1. Floating Action Button (Icon Only & Moveable) */
 .fab-tour-launcher {
   position: fixed;
-  bottom: 26px;
-  right: 26px;
+  bottom: 96px;
+  right: 24px;
   width: 54px;
   height: 54px;
   border-radius: 50%;
   background: linear-gradient(135deg, #f3e5ab 0%, #d4af37 50%, #aa820a 100%);
   border: 2px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 8px 26px rgba(212, 175, 55, 0.45), 0 0 16px rgba(212, 175, 55, 0.3);
-  cursor: pointer;
-  z-index: 999;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 1050;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
   outline: none;
 }
 
 .fab-tour-launcher:hover {
-  transform: scale(1.1) translateY(-3px);
+  transform: scale(1.1) translateY(-2px);
   box-shadow: 0 14px 34px rgba(212, 175, 55, 0.6), 0 0 24px rgba(212, 175, 55, 0.45);
 }
 
 .fab-tour-launcher:active {
-  transform: scale(0.96);
+  cursor: grabbing;
+}
+
+.fab-tour-launcher.is-dragging {
+  cursor: grabbing !important;
+  transition: none !important;
+  transform: scale(1.15) !important;
+  box-shadow: 0 20px 45px rgba(212, 175, 55, 0.8), 0 0 32px rgba(212, 175, 55, 0.6) !important;
+  z-index: 10005 !important;
+}
+
+.fab-tour-grip {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+.fab-tour-launcher:hover .fab-tour-grip {
+  opacity: 1;
 }
 
 .fab-tour-icon {
@@ -3851,10 +3880,10 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
   /* Floating Tour Launcher */
   .fab-tour-launcher {
-    bottom: calc(16px + var(--sab));
+    bottom: calc(88px + var(--sab, 0px));
     right: 14px;
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     font-size: 20px;
   }
 
@@ -4481,4 +4510,1308 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     padding: 6px 4px;
   }
 }
+
+/* ==============================================================================
+   ATELIER LOOKBOOK & INTERACTIVE COLORWAY STUDIO STYLES (COMPACT & SLEEK)
+   ============================================================================== */
+.lookbook-header-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 18px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: linear-gradient(135deg, rgba(19, 27, 46, 0.85) 0%, rgba(10, 15, 29, 0.95) 100%);
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.lookbook-header-banner::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.lookbook-header-left {
+  flex: 1;
+  min-width: 240px;
+}
+
+.lookbook-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin: 3px 0 2px 0;
+  letter-spacing: -0.2px;
+}
+
+.lookbook-subtitle {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.38;
+  max-width: 600px;
+  margin: 0;
+}
+
+.lookbook-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  min-width: 260px;
+}
+
+.lookbook-metric-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  border-radius: 6px;
+  transition: all 0.25s ease;
+}
+
+.lookbook-metric-pill:hover {
+  background: rgba(212, 175, 55, 0.07);
+  border-color: rgba(212, 175, 55, 0.35);
+  transform: translateY(-1px);
+}
+
+.lm-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.lm-val {
+  font-family: var(--font-serif);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.lm-label {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Toolbar: Filters, Search & Sort (Compact) */
+.lookbook-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  border-radius: 8px;
+}
+
+.lookbook-category-pills {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.lookbook-cat-btn {
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.lookbook-cat-btn:hover {
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--gold-light);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+.lookbook-cat-btn.active {
+  background: linear-gradient(135deg, #d4af37, #b8860b);
+  color: #0f172a;
+  border-color: #d4af37;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+}
+
+.lookbook-search-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lookbook-search-box {
+  position: relative;
+  min-width: 180px;
+}
+
+.lookbook-search-box .search-icon {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.lookbook-search-box input {
+  width: 100%;
+  padding: 4px 8px 4px 26px;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.lookbook-search-box input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+.lookbook-sort-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lookbook-sort-box label {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lookbook-sort-box select {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Lookbook Grid & Cards (Compact Multi-Column) */
+.lookbook-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.lookbook-card {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(19, 27, 46, 0.85) 0%, rgba(13, 19, 33, 0.95) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.lookbook-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 14px rgba(212, 175, 55, 0.15);
+}
+
+/* Garment Interactive Visual Stage (Compact) */
+.garment-stage {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 6px 2px 6px;
+  background: radial-gradient(circle at 50% 45%, rgba(212, 175, 55, 0.1) 0%, rgba(15, 23, 42, 0.4) 70%);
+  min-height: 150px;
+  height: 150px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.garment-svg-wrap {
+  width: 100%;
+  max-width: 115px;
+  height: 140px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45));
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lookbook-card:hover .garment-svg-wrap {
+  transform: scale(1.04);
+}
+
+.garment-vector-art {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.garment-fill-target {
+  transition: fill 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stage-watermark {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.04);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  pointer-events: none;
+}
+
+.offer-pill {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 999px;
+  padding: 2px 6px;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.offer-flame {
+  font-size: 8.5px;
+}
+
+/* Card Body & Product Specs */
+.lookbook-card-body {
+  padding: 8px 10px 10px 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.lookbook-meta-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.lookbook-meta-top .badge-gold {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.lookbook-sku-tag {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.stock-status-chip {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.stock-status-chip.in-stock {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.stock-status-chip.low-stock {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.lookbook-card-title {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 1px 0 2px 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lookbook-card-silhouette {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.25;
+  margin: 0 0 4px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lookbook-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.price-discounted, .price-regular, .price-current {
+  font-family: var(--font-serif);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.price-original {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.price-savings {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.margin-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: auto;
+}
+
+/* Swatches (Curated Dots Only, Compact) */
+.colorway-selector-wrap {
+  margin: 3px 0 4px 0;
+  padding: 3px 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.colorway-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.colorway-label-heading {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+.active-color-name {
+  font-size: 9.5px;
+  color: var(--gold-light);
+  font-weight: 600;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swatches-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  outline: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.swatch-dot:hover {
+  transform: scale(1.2);
+  border-color: #ffffff;
+}
+
+.swatch-dot.active {
+  transform: scale(1.22);
+  border-color: #d4af37;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.9), 0 0 5px rgba(212, 175, 55, 0.85);
+}
+
+/* Fabric Quick Chips */
+.fabric-specs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.fabric-spec-chip {
+  font-size: 9px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 1px 4px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock-loc-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stock-loc-item b {
+  color: var(--text-primary);
+}
+
+.stock-loc-sep {
+  opacity: 0.4;
+}
+
+/* Card Action Buttons (Smaller, Sleeker) */
+.lookbook-card-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  margin-top: auto;
+}
+
+.lookbook-card-actions .btn-dossier {
+  padding: 4px 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  letter-spacing: 0px !important;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.lookbook-card-actions .btn-replenish {
+  padding: 4px 6px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  letter-spacing: 0px !important;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+/* ==============================================================================
+   LOOKBOOK ATELIER DOSSIER MODAL STYLING (COMPACT)
+   ============================================================================== */
+.modal-lookbook-container {
+  max-width: 780px !important;
+  max-height: 86vh !important;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+}
+
+.dossier-header-title-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.dossier-cat-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.dossier-modal-body {
+  overflow-y: auto;
+  max-height: calc(84vh - 120px);
+  padding: 12px 16px;
+}
+
+.dossier-grid {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 14px;
+}
+
+.dossier-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossier-stage-large {
+  background: radial-gradient(circle at 50% 45%, rgba(212, 175, 55, 0.12) 0%, rgba(15, 23, 42, 0.6) 75%);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 180px;
+  height: 180px;
+}
+
+.dossier-stage-large .garment-vector-art {
+  max-height: 160px;
+  width: auto;
+}
+
+.dossier-palette-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.dossier-palette-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.dossier-margin-strip {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.margin-metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.margin-metric-item .m-lbl {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.margin-metric-item .m-val {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+
+.dossier-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dossier-offer-callout {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.offer-callout-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.offer-callout-body {
+  display: flex;
+  gap: 12px;
+}
+
+.offer-price-metric {
+  display: flex;
+  flex-direction: column;
+}
+
+.offer-price-metric .metric-lbl {
+  font-size: 8.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.offer-price-metric .metric-val {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.offer-price-metric .metric-val.discounted {
+  color: #10b981;
+}
+
+.offer-price-metric .metric-val.original {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.offer-price-metric .metric-val.savings {
+  color: var(--gold-light);
+}
+
+.dossier-section-heading {
+  font-family: var(--font-serif);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin: 0 0 4px 0;
+  letter-spacing: 0.3px;
+}
+
+.dossier-spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 10.5px;
+}
+
+.dossier-spec-table td {
+  padding: 3px 6px;
+  line-height: 1.35;
+}
+
+.dossier-spec-table td.spec-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 30%;
+}
+
+.dossier-spec-table td.spec-value {
+  color: var(--text-primary);
+}
+
+.dossier-size-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 10.5px;
+}
+
+.dossier-size-table th {
+  padding: 4px 6px;
+  background: rgba(212, 175, 55, 0.08);
+  color: var(--gold-light);
+  font-weight: 700;
+  font-size: 9.5px;
+  text-transform: uppercase;
+}
+
+.dossier-size-table td {
+  padding: 3px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.size-status-pill {
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.size-status-pill.status-in-stock {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.size-status-pill.status-low-stock {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.size-status-pill.status-out {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.dossier-styling-card {
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.styling-card-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  margin-bottom: 4px;
+  color: var(--gold-light);
+}
+
+.styling-silhouette-desc, .styling-notes-text {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  margin: 0 0 3px 0;
+}
+
+.pairing-companion-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.dossier-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dossier-footer-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.dossier-footer-actions button {
+  padding: 4px 10px !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+}
+
+/* Light Mode Overrides for Lookbook */
+[data-theme="light"] .lookbook-header-banner {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-color: rgba(184, 134, 11, 0.3);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+
+[data-theme="light"] .lookbook-title {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .lookbook-metric-pill {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .lm-val {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .lookbook-toolbar {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .lookbook-cat-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+[data-theme="light"] .lookbook-cat-btn:hover {
+  background: rgba(184, 134, 11, 0.12);
+  color: #7c4a03;
+}
+
+[data-theme="light"] .lookbook-search-box input,
+[data-theme="light"] .lookbook-sort-box select {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .lookbook-card {
+  background: #ffffff;
+  border-color: rgba(184, 134, 11, 0.28);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .garment-stage {
+  background: radial-gradient(circle at 50% 45%, rgba(184, 134, 11, 0.12) 0%, rgba(241, 245, 249, 0.6) 75%);
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .lookbook-card-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .lookbook-card-silhouette {
+  color: #64748b;
+}
+
+[data-theme="light"] .colorway-selector-wrap {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .colorway-label-heading {
+  color: #64748b;
+}
+
+[data-theme="light"] .active-color-name {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .price-discounted,
+[data-theme="light"] .price-regular,
+[data-theme="light"] .price-current {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .margin-tag,
+[data-theme="light"] .margin-pill {
+  background: rgba(184, 134, 11, 0.12);
+  color: #7c4a03;
+}
+
+[data-theme="light"] .fabric-spec-chip {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+[data-theme="light"] .lookbook-card-actions .btn-dossier {
+  background: rgba(184, 134, 11, 0.12);
+  border-color: rgba(184, 134, 11, 0.35);
+  color: #7c4a03;
+}
+
+[data-theme="light"] .lookbook-card-actions .btn-dossier:hover {
+  background: #b8860b;
+  color: #ffffff;
+}
+
+[data-theme="light"] .modal-lookbook-container {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+[data-theme="light"] .dossier-stage-large {
+  background: radial-gradient(circle at 50% 45%, rgba(184, 134, 11, 0.14) 0%, #f1f5f9 75%);
+  border-color: #cbd5e1;
+}
+
+[data-theme="light"] .dossier-palette-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .dossier-palette-title {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .dossier-price-banner {
+  background: rgba(184, 134, 11, 0.08);
+  border-color: rgba(184, 134, 11, 0.3);
+}
+
+[data-theme="light"] .dp-val {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .dossier-section-title {
+  color: #7c4a03;
+}
+
+[data-theme="light"] .dossier-spec-table,
+[data-theme="light"] .dossier-size-table {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+[data-theme="light"] .dossier-size-table th {
+  background: rgba(184, 134, 11, 0.12);
+  color: #7c4a03;
+}
+
+[data-theme="light"] .dossier-spec-table td.spec-key {
+  color: #64748b;
+}
+
+[data-theme="light"] .dossier-spec-table td.spec-val {
+  color: #0f172a;
+}
+
+[data-theme="light"] .dossier-styling-box {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.35);
+  color: #0369a1;
+}
+
+/* Lookbook Responsive Breakpoints */
+@media (max-width: 900px) {
+  .lookbook-header-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .lookbook-metrics-strip {
+    width: 100%;
+  }
+  .dossier-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .lookbook-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .lookbook-search-sort {
+    flex-direction: column;
+    width: 100%;
+  }
+  .lookbook-search-box {
+    width: 100%;
+    min-width: 0;
+  }
+  .lookbook-sort-box {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .lookbook-sort-box select {
+    flex: 1;
+  }
+  .lookbook-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+  /* Dossier & Sizing Modal: Mobile Compact Architecture */
+  .modal-lookbook-container {
+    width: calc(100vw - 16px) !important;
+    max-width: 500px !important;
+    margin: 8px auto !important;
+    max-height: 94vh !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6) !important;
+  }
+
+  .dossier-modal-header {
+    padding: 8px 12px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dossier-meta-badges {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  .dossier-meta-badges .badge-gold,
+  .dossier-meta-badges .dossier-cat-pill,
+  .dossier-meta-badges .stock-badge {
+    font-size: 8.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .dossier-title {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    color: var(--text-primary) !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100vw - 80px);
+  }
+
+  .dossier-modal-close {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 13px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dossier-modal-body {
+    padding: 8px 10px !important;
+    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+    max-height: calc(94vh - 100px) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dossier-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Compact Garment Visualizer + Palette Strip */
+  .dossier-left-col {
+    display: grid !important;
+    grid-template-columns: 105px 1fr !important;
+    gap: 8px !important;
+    align-items: center !important;
+    background: rgba(0, 0, 0, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+  }
+
+  .dossier-stage-large {
+    min-height: 110px !important;
+    height: 110px !important;
+    padding: 4px !important;
+    border-radius: 6px !important;
+    background: radial-gradient(circle at 50% 45%, rgba(212, 175, 55, 0.1) 0%, rgba(15, 23, 42, 0.4) 70%) !important;
+  }
+
+  .dossier-stage-large .garment-vector-art {
+    max-height: 102px !important;
+    max-width: 95px !important;
+  }
+
+  .dossier-palette-box {
+    padding: 3px 4px !important;
+    border-radius: 6px !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .dossier-palette-header {
+    font-size: 8.5px !important;
+    margin-bottom: 2px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+
+  .dossier-palette-box .swatches-cluster {
+    gap: 3px !important;
+  }
+
+  .dossier-palette-box .swatch-dot {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .dossier-margin-strip {
+    padding: 4px 6px !important;
+    border-radius: 6px !important;
+    margin-top: 3px !important;
+    gap: 4px !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .margin-metric-item .m-lbl {
+    font-size: 7.5px !important;
+  }
+
+  .margin-metric-item .m-val {
+    font-size: 10px !important;
+  }
+
+  .dossier-right-col {
+    gap: 8px !important;
+  }
+
+  .dossier-offer-callout {
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .offer-callout-header {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .offer-price-metric .metric-lbl {
+    font-size: 7.5px !important;
+  }
+
+  .offer-price-metric .metric-val {
+    font-size: 11px !important;
+  }
+
+  .dossier-section-heading {
+    font-size: 10.5px !important;
+    margin: 0 0 3px 0 !important;
+  }
+
+  .dossier-spec-table {
+    font-size: 10px !important;
+    border-radius: 5px !important;
+  }
+
+  .dossier-spec-table td {
+    padding: 2.5px 5px !important;
+    line-height: 1.3 !important;
+  }
+
+  .dossier-spec-table td.spec-label {
+    width: 32% !important;
+    font-size: 9.5px !important;
+  }
+
+  .dossier-spec-table td.spec-value {
+    font-size: 9.5px !important;
+  }
+
+  .dossier-size-table {
+    font-size: 10px !important;
+    border-radius: 5px !important;
+  }
+
+  .dossier-size-table th {
+    padding: 3px 4px !important;
+    font-size: 9px !important;
+  }
+
+  .dossier-size-table td {
+    padding: 2.5px 4px !important;
+    font-size: 9.5px !important;
+  }
+
+  .size-status-pill {
+    font-size: 8.5px !important;
+    padding: 1px 3px !important;
+  }
+
+  .dossier-styling-card {
+    padding: 6px 8px !important;
+    border-radius: 6px !important;
+  }
+
+  .styling-card-header {
+    font-size: 10px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .styling-silhouette-desc,
+  .styling-notes-text {
+    font-size: 9.5px !important;
+    line-height: 1.25 !important;
+    margin: 0 0 2px 0 !important;
+  }
+
+  .pairing-companion-row {
+    margin-top: 3px !important;
+    font-size: 9px !important;
+  }
+
+  .pairing-companion-row button {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+  }
+
+  /* Compact Modal Footer */
+  .dossier-modal-footer {
+    padding: 6px 10px !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dossier-footer-info {
+    display: none !important;
+  }
+
+  .dossier-footer-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .dossier-footer-actions button {
+    padding: 5px 8px !important;
+    font-size: 10.5px !important;
+    font-weight: 600 !important;
+    border-radius: 5px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+}
+
 

@@ -15,7 +15,7 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 
 from src.data.db_manager import DatabaseManager
-from src.core.catalog import CATALOG, CATEGORIES
+from src.core.catalog import CATALOG, CATEGORIES, get_lookbook_catalog
 from src.core.constants import (
     StockLocation,
     ApparelSize,
@@ -145,6 +145,122 @@ def get_inventory_overview() -> Dict[str, Any]:
         "total_shop_units": sum(shop_totals.values()),
         "total_warehouse_units": sum(wh_totals.values()),
         "total_enterprise_units": sum(shop_totals.values()) + sum(wh_totals.values())
+    }
+
+
+@router.get("/lookbook")
+def get_lookbook_details() -> Dict[str, Any]:
+    """
+    Retrieves rich atelier lookbook specifications, interactive colorways,
+    fabric details, active promotional campaign offers, and dual-location
+    inventory matrices for all boutique catalog styles.
+    """
+    db = get_db()
+    enriched_catalog = get_lookbook_catalog()
+    shop_matrix = db.get_size_matrix_stock()
+    wh_matrix = db.get_warehouse_matrix_stock()
+    shop_totals = db.get_current_stock_on_hand()
+    wh_totals = db.get_warehouse_stock_on_hand()
+
+    # Retrieve all active campaigns to compute real-time promotional offers
+    active_campaigns = []
+    try:
+        raw_campaigns = db.get_all_campaigns()
+        if hasattr(raw_campaigns, "to_dict"):
+            raw_list = raw_campaigns.to_dict("records")
+        elif isinstance(raw_campaigns, list):
+            raw_list = raw_campaigns
+        else:
+            raw_list = []
+        active_campaigns = [c for c in raw_list if str(c.get("status", "")).lower() == "active"]
+    except Exception as e:
+        active_campaigns = []
+
+    # Map size matrices per product
+    shop_by_pid_size = {}
+    if not shop_matrix.empty:
+        for row in shop_matrix.to_dict("records"):
+            pid = row["product_id"]
+            sz = row["size_variant"]
+            shop_by_pid_size.setdefault(pid, {})[sz] = int(row["stock_on_hand"])
+
+    wh_by_pid_size = {}
+    if not wh_matrix.empty:
+        for row in wh_matrix.to_dict("records"):
+            pid = row["product_id"]
+            sz = row["size_variant"]
+            wh_by_pid_size.setdefault(pid, {})[sz] = int(row["stock_on_hand"])
+
+    lookbook_items = []
+    standard_sizes = ["S", "M", "L", "XL"]
+
+    for pid, item in enriched_catalog.items():
+        price = float(item.get("price", 0.0))
+        cost = float(item.get("cost", 0.0))
+        category = item.get("category", "Apparel")
+        s_qty = int(shop_totals.get(pid, shop_totals.get(item["name"], 0)))
+        w_qty = int(wh_totals.get(pid, wh_totals.get(item["name"], 0)))
+        total_units = s_qty + w_qty
+
+        # Calculate best active promotional offer for this item/category
+        best_discount_pct = 0.0
+        matching_campaign = None
+        for camp in active_campaigns:
+            t_cat = camp.get("target_category", "All Categories")
+            if t_cat == "All Categories" or t_cat.lower() == category.lower():
+                d_pct = float(camp.get("discount_pct", 0.0))
+                if d_pct > best_discount_pct:
+                    best_discount_pct = d_pct
+                    matching_campaign = camp
+
+        has_offer = best_discount_pct > 0.0
+        discounted_price = round(price * (1.0 - (best_discount_pct / 100.0)), 2) if has_offer else price
+        savings = round(price - discounted_price, 2) if has_offer else 0.0
+        gross_margin_pct = round(((price - cost) / price * 100), 1) if price > 0 else 0.0
+
+        # Build size breakdown
+        size_breakdown = {}
+        for sz in standard_sizes:
+            sh_val = shop_by_pid_size.get(pid, {}).get(sz, 0)
+            wh_val = wh_by_pid_size.get(pid, {}).get(sz, 0)
+            size_breakdown[sz] = {
+                "shop_floor": sh_val,
+                "warehouse_reserve": wh_val,
+                "total": sh_val + wh_val,
+                "available": (sh_val + wh_val) > 0
+            }
+
+        lookbook_items.append({
+            "product_id": pid,
+            "product_name": item["name"],
+            "category": category,
+            "retail_price": price,
+            "wholesale_cost": cost,
+            "gross_margin_pct": gross_margin_pct,
+            "has_offer": has_offer,
+            "discount_pct": best_discount_pct,
+            "discounted_price": discounted_price,
+            "savings": savings,
+            "campaign_name": matching_campaign.get("name") if matching_campaign else None,
+            "campaign_tagline": matching_campaign.get("banner_tagline") if matching_campaign else None,
+            "shop_stock": s_qty,
+            "warehouse_stock": w_qty,
+            "total_stock": total_units,
+            "stock_status": "OUT_OF_STOCK" if total_units == 0 else ("LOW_STOCK" if s_qty <= 15 else "IN_STOCK"),
+            "default_color": item.get("color", "#d4af37"),
+            "colorways": item.get("colorways", []),
+            "fabric": item.get("fabric", {}),
+            "silhouette": item.get("silhouette", ""),
+            "styling_notes": item.get("styling_notes", ""),
+            "pairing_sku": item.get("pairing_sku", ""),
+            "size_breakdown": size_breakdown
+        })
+
+    return {
+        "success": True,
+        "count": len(lookbook_items),
+        "categories": CATEGORIES,
+        "items": lookbook_items
     }
 
 

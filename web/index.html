@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
   <!-- Luxury Atelier Design System -->
-  <link rel="stylesheet" href="/css/style.css?v=3.5.0">
+  <link rel="stylesheet" href="/css/style.css?v=3.6.3">
 </head>
 <body>
 
@@ -88,6 +88,9 @@
       </button>
       <button class="nav-tab-btn" data-tab="tab-live-ops">
         ⚡ Live Shop Operations
+      </button>
+      <button class="nav-tab-btn" data-tab="tab-lookbook">
+        👗 Atelier Lookbook & Studio
       </button>
       <button class="nav-tab-btn" data-tab="tab-inventory">
         ⚙️ Inventory & Circuit Controls
@@ -1498,6 +1501,101 @@
       </div>
     </section>
 
+    <!-- ==========================================
+         TAB: ATELIER LOOKBOOK & COLORWAY STUDIO
+         ========================================== -->
+    <section id="tab-lookbook" class="tab-content">
+      <!-- Studio Header Banner -->
+      <div class="lookbook-header-banner glass-card">
+        <div class="lookbook-header-left">
+          <div class="badge-gold">⚜️ Haute Couture Interactive Studio</div>
+          <h2 class="lookbook-title">Atelier Visual Lookbook & Colorway Customizer</h2>
+          <p class="lookbook-subtitle">
+            Explore our 20 couture silhouettes. Experiment with available colorway swatches in real-time, inspect fabric weave & artisan craftsmanship, and monitor active promotional markdowns.
+          </p>
+        </div>
+        <div class="lookbook-metrics-strip">
+          <div class="lookbook-metric-pill">
+            <span class="lm-icon">👗</span>
+            <div>
+              <div class="lm-val" id="lb-metric-total-styles">20</div>
+              <div class="lm-label">Couture Silhouettes</div>
+            </div>
+          </div>
+          <div class="lookbook-metric-pill">
+            <span class="lm-icon">🎨</span>
+            <div>
+              <div class="lm-val" id="lb-metric-total-colorways">100+</div>
+              <div class="lm-label">Live Colorways</div>
+            </div>
+          </div>
+          <div class="lookbook-metric-pill">
+            <span class="lm-icon">🏷️</span>
+            <div>
+              <div class="lm-val" id="lb-metric-active-offers">Live</div>
+              <div class="lm-label">Promotional Offers</div>
+            </div>
+          </div>
+          <div class="lookbook-metric-pill">
+            <span class="lm-icon">🧵</span>
+            <div>
+              <div class="lm-val">100%</div>
+              <div class="lm-label">Natural Luxury Fibers</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Studio Filter & Search Toolbar -->
+      <div class="lookbook-toolbar glass-card">
+        <!-- Category Filter Pills -->
+        <div class="lookbook-category-pills" id="lookbook-category-pills">
+          <button class="lookbook-cat-btn active" data-cat="ALL" onclick="App.filterLookbook('ALL')">
+            ✨ All Silhouettes (20)
+          </button>
+          <button class="lookbook-cat-btn" data-cat="Dresses" onclick="App.filterLookbook('Dresses')">
+            👗 Dresses (4)
+          </button>
+          <button class="lookbook-cat-btn" data-cat="Outerwear" onclick="App.filterLookbook('Outerwear')">
+            🧥 Outerwear (4)
+          </button>
+          <button class="lookbook-cat-btn" data-cat="Tops" onclick="App.filterLookbook('Tops')">
+            👚 Poplin & Silk Tops (5)
+          </button>
+          <button class="lookbook-cat-btn" data-cat="Bottoms" onclick="App.filterLookbook('Bottoms')">
+            👖 Skirts & Trousers (4)
+          </button>
+          <button class="lookbook-cat-btn" data-cat="Knitwear" onclick="App.filterLookbook('Knitwear')">
+            🧶 Cashmere & Knit (3)
+          </button>
+        </div>
+
+        <!-- Search & Sort Controls -->
+        <div class="lookbook-search-sort">
+          <div class="lookbook-search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="lookbook-search-input" placeholder="Search garment by name, fabric, or SKU..." oninput="App.onLookbookSearch(this.value)">
+          </div>
+          <div class="lookbook-sort-box">
+            <label for="lookbook-sort-select">Sort:</label>
+            <select id="lookbook-sort-select" onchange="App.onLookbookSort(this.value)">
+              <option value="featured">🌟 Curated Atelier Order</option>
+              <option value="price_asc">💵 Price: Low to High</option>
+              <option value="price_desc">💎 Price: High to Low</option>
+              <option value="margin_desc">📈 Highest Margin %</option>
+              <option value="offers">🔥 Active Promotional Offers</option>
+              <option value="stock_desc">📦 Stock Depth: High to Low</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Garment Cards Grid -->
+      <div class="lookbook-grid" id="lookbook-garments-grid">
+        <!-- Dynamically rendered by App.renderLookbookGrid() -->
+      </div>
+    </section>
+
   </main>
 
   <!-- ==========================================
@@ -1735,10 +1833,48 @@
     </div>
   </div>
 
-  <!-- Floating Interactive Architecture Tour Button (Icon Only) -->
-  <button class="fab-tour-launcher" id="fab-tour-launcher" onclick="BoutiqueTour.start()" title="Explore System Architecture (Interactive Tour)" aria-label="Explore System Architecture">
+  <!-- ==========================================
+       LOOKBOOK ATELIER DOSSIER MODAL
+       ========================================== -->
+  <div class="modal-overlay" id="modal-lookbook-dossier">
+    <div class="modal-container modal-lookbook-container glass-card">
+      <div class="modal-header dossier-modal-header">
+        <div class="dossier-header-title-group">
+          <div class="dossier-meta-badges">
+            <span class="badge-gold" id="dossier-sku-badge">SKU P001</span>
+            <span class="dossier-cat-pill" id="dossier-cat-pill">Dresses</span>
+            <span class="stock-badge in-stock" id="dossier-stock-badge">In Stock</span>
+          </div>
+          <h3 class="modal-title dossier-title" id="dossier-product-title">Linen Wrap Dress</h3>
+        </div>
+        <button class="modal-close dossier-modal-close" onclick="App.closeLookbookDossier()">✕</button>
+      </div>
+      
+      <div class="modal-body dossier-modal-body" id="dossier-modal-body">
+        <!-- Dynamically populated by App.openLookbookDossier(productId) -->
+      </div>
+
+      <div class="modal-footer dossier-modal-footer">
+        <div class="dossier-footer-info">
+          <span class="text-muted" style="font-size:11px;">Need stock relocation or VIP concierge styling?</span>
+        </div>
+        <div class="dossier-footer-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="dossier-copy-btn" onclick="App.copyDossierStylingRecommendation()">
+            📋 Copy VIP Note
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" id="dossier-transfer-btn" onclick="App.quickTransferFromDossier()">
+            🔄 Quick Transfer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Interactive Architecture Tour Button (Icon Only & Moveable) -->
+  <button class="fab-tour-launcher" id="fab-tour-launcher" onclick="BoutiqueTour.handleFabClick(event)" title="Explore Architecture Tour • Drag anywhere to move (Double-click to reset)" aria-label="Explore System Architecture">
     <span class="fab-tour-icon">🧭</span>
     <span class="fab-tour-ring"></span>
+    <span class="fab-tour-grip" title="Drag to move">::</span>
   </button>
 
   <!-- ==========================================
@@ -1747,9 +1883,9 @@
   <div id="toast-container"></div>
 
   <!-- Client Application Scripts -->
-  <script src="/js/api.js?v=3.3.0"></script>
+  <script src="/js/api.js?v=3.6.0"></script>
   <script src="/js/charts.js?v=3.3.0"></script>
-  <script src="/js/tour.js?v=3.5.0"></script>
-  <script src="/js/app.js?v=3.3.0"></script>
+  <script src="/js/tour.js?v=3.6.0"></script>
+  <script src="/js/app.js?v=3.6.3"></script>
 </body>
 </html>
