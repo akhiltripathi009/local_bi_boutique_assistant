@@ -1,4 +1,4 @@
-﻿# Python bytecode & cache
+# Python bytecode & cache
 __pycache__/
 *.py[cod]
 *.class
@@ -31,3 +31,9 @@ logs/*.log
 *.swp
 *.swo
 .DS_Store
+
+# Credentials & Local Configuration
+.env
+.env.local
+storage/config/
+

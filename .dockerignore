@@ -1,0 +1,15 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+.idea
+.vscode
+.junie
+app.log
+logs
+storage/exports/*.pdf
+scratch/
+.env
