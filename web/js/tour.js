@@ -206,6 +206,15 @@ const BoutiqueTour = {
         100% { transform: scale(1.5); opacity: 0; }
       }
 
+      /* 0. Background Page Scroll Lock When Tour Is Open */
+      html.tour-open,
+      body.tour-open {
+        overflow: hidden !important;
+        height: 100% !important;
+        overscroll-behavior: none !important;
+        touch-action: none !important;
+      }
+
       /* 2. Full Dashboard Coverage Backdrop */
       .tour-backdrop {
         position: fixed !important;
@@ -215,6 +224,8 @@ const BoutiqueTour = {
         -webkit-backdrop-filter: blur(8px) !important;
         z-index: 99990 !important;
         animation: tourBackdropFade 0.25s ease !important;
+        touch-action: none !important;
+        overscroll-behavior: contain !important;
       }
       @keyframes tourBackdropFade {
         from { opacity: 0; }
@@ -229,6 +240,8 @@ const BoutiqueTour = {
         transform: translate(-50%, -50%) !important;
         width: 92% !important;
         max-width: 550px !important;
+        max-height: 90vh !important;
+        max-height: 90dvh !important;
         background: #0f172a !important;
         border: 1px solid rgba(212, 175, 55, 0.45) !important;
         box-shadow: 0 28px 72px rgba(0, 0, 0, 0.8), 0 0 36px rgba(212, 175, 55, 0.25) !important;
@@ -237,6 +250,7 @@ const BoutiqueTour = {
         overflow: hidden !important;
         display: flex !important;
         flex-direction: column !important;
+        overscroll-behavior: contain !important;
         animation: tourPopupScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         font-family: 'Inter', -apple-system, sans-serif !important;
         color: #f8fafc !important;
@@ -244,6 +258,32 @@ const BoutiqueTour = {
       @keyframes tourPopupScaleIn {
         from { opacity: 0; transform: translate(-50%, -46%) scale(0.94); }
         to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      }
+
+      /* Scrollable Middle Container (Guarantees Internal Scroll With Zero Background Bleed) */
+      .tour-body-scroll {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        overscroll-behavior: contain !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-height: calc(90vh - 135px) !important;
+        max-height: calc(90dvh - 135px) !important;
+        scrollbar-width: thin !important;
+        scrollbar-color: rgba(212, 175, 55, 0.4) transparent !important;
+      }
+      .tour-body-scroll::-webkit-scrollbar {
+        width: 5px !important;
+      }
+      .tour-body-scroll::-webkit-scrollbar-track {
+        background: transparent !important;
+      }
+      .tour-body-scroll::-webkit-scrollbar-thumb {
+        background: rgba(212, 175, 55, 0.35) !important;
+        border-radius: 4px !important;
+      }
+      .tour-body-scroll::-webkit-scrollbar-thumb:hover {
+        background: rgba(212, 175, 55, 0.6) !important;
       }
 
       /* Top Progress Bar */
@@ -804,6 +844,43 @@ const BoutiqueTour = {
   },
 
   /**
+   * Locks the background html/body scrolling and stores previous overflow states.
+   */
+  _lockBackgroundScroll() {
+    this._prevBodyOverflow = document.body ? document.body.style.overflow : '';
+    this._prevHtmlOverflow = document.documentElement ? document.documentElement.style.overflow : '';
+    this._prevBodyOverscroll = document.body ? document.body.style.overscrollBehavior : '';
+    this._prevHtmlOverscroll = document.documentElement ? document.documentElement.style.overscrollBehavior : '';
+
+    if (document.body) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      document.body.classList.add('tour-open');
+    }
+    if (document.documentElement) {
+      document.documentElement.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+      document.documentElement.classList.add('tour-open');
+    }
+  },
+
+  /**
+   * Unlocks background html/body scrolling and restores original properties.
+   */
+  _unlockBackgroundScroll() {
+    if (document.body) {
+      document.body.classList.remove('tour-open');
+      document.body.style.overflow = this._prevBodyOverflow || '';
+      document.body.style.overscrollBehavior = this._prevBodyOverscroll || '';
+    }
+    if (document.documentElement) {
+      document.documentElement.classList.remove('tour-open');
+      document.documentElement.style.overflow = this._prevHtmlOverflow || '';
+      document.documentElement.style.overscrollBehavior = this._prevHtmlOverscroll || '';
+    }
+  },
+
+  /**
    * Starts the interactive tour from the beginning (or specified index).
    */
   start(stepIndex = 0) {
@@ -811,6 +888,10 @@ const BoutiqueTour = {
     this.isActive = true;
     this.detailsOpen = false;
     this.currentStepIndex = Math.max(0, Math.min(stepIndex, this.steps.length - 1));
+
+    // Strictly lock background page scroll
+    this._lockBackgroundScroll();
+
     this.injectTourDOM();
     this.renderStep();
   },
@@ -820,6 +901,7 @@ const BoutiqueTour = {
    * Features:
    * - Cross icon on TOP LEFT corner
    * - Arrow buttons (← and →) for navigation
+   * - Internal touch & wheel scroll containment
    * - Collapsible info drawer for deep dive details
    */
   injectTourDOM() {
@@ -840,6 +922,17 @@ const BoutiqueTour = {
     backdrop.onclick = (e) => {
       if (e.target === backdrop) BoutiqueTour.end();
     };
+
+    // Strictly prevent wheel and touch gestures on backdrop from bleeding to background
+    backdrop.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+
+    backdrop.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
 
     const card = document.createElement('div');
     card.id = 'boutique-tour-card';
@@ -867,29 +960,32 @@ const BoutiqueTour = {
         </div>
       </div>
 
-      <!-- Concise Visual Summary Cards -->
-      <div class="tour-cards-container" id="tour-summary-cards"></div>
+      <!-- Scrollable Middle Body (Touch & Wheel Contained) -->
+      <div class="tour-body-scroll" id="tour-body-scroll">
+        <!-- Concise Visual Summary Cards -->
+        <div class="tour-cards-container" id="tour-summary-cards"></div>
 
-      <!-- Expandable Info & Code Drawer -->
-      <div class="tour-info-drawer">
-        <button class="tour-info-toggle-btn" id="tour-info-toggle-btn" onclick="BoutiqueTour.toggleDetails()">
-          <span class="tour-info-icon-badge">ℹ️</span>
-          <span id="tour-info-btn-text">Technical Details & Code</span>
-          <span class="tour-chevron" id="tour-chevron">▼</span>
-        </button>
+        <!-- Expandable Info & Code Drawer -->
+        <div class="tour-info-drawer">
+          <button class="tour-info-toggle-btn" id="tour-info-toggle-btn" onclick="BoutiqueTour.toggleDetails()">
+            <span class="tour-info-icon-badge">ℹ️</span>
+            <span id="tour-info-btn-text">Technical Details & Code</span>
+            <span class="tour-chevron" id="tour-chevron">▼</span>
+          </button>
 
-        <div class="tour-details-content" id="tour-details-content" style="display:none;">
-          <div class="tour-detail-row">
-            <span class="tour-detail-label">Concept:</span>
-            <span class="tour-detail-val" id="tour-detail-concept"></span>
-          </div>
-          <div class="tour-detail-row">
-            <span class="tour-detail-label">Data Flow:</span>
-            <span class="tour-detail-val" id="tour-detail-flow"></span>
-          </div>
-          <div class="tour-detail-row">
-            <span class="tour-detail-label">Source Code:</span>
-            <code class="tour-detail-code" id="tour-detail-code"></code>
+          <div class="tour-details-content" id="tour-details-content" style="display:none;">
+            <div class="tour-detail-row">
+              <span class="tour-detail-label">Concept:</span>
+              <span class="tour-detail-val" id="tour-detail-concept"></span>
+            </div>
+            <div class="tour-detail-row">
+              <span class="tour-detail-label">Data Flow:</span>
+              <span class="tour-detail-val" id="tour-detail-flow"></span>
+            </div>
+            <div class="tour-detail-row">
+              <span class="tour-detail-label">Source Code:</span>
+              <code class="tour-detail-code" id="tour-detail-code"></code>
+            </div>
           </div>
         </div>
       </div>
@@ -911,13 +1007,48 @@ const BoutiqueTour = {
     document.body.appendChild(backdrop);
     document.body.appendChild(card);
 
-    // Keyboard navigation: Left/Right arrows and Escape key
-    document.addEventListener('keydown', (e) => {
-      if (!this.isActive) return;
-      if (e.key === 'Escape') this.end();
-      else if (e.key === 'ArrowRight') this.next();
-      else if (e.key === 'ArrowLeft') this.prev();
-    });
+    // Trap wheel inside scroll body and prevent boundary escape
+    const bodyScroll = card.querySelector('#tour-body-scroll');
+    if (bodyScroll) {
+      bodyScroll.addEventListener('wheel', (e) => {
+        const delta = e.deltaY;
+        const up = delta < 0;
+        const down = delta > 0;
+        const atTop = bodyScroll.scrollTop <= 0;
+        const atBottom = Math.ceil(bodyScroll.scrollTop + bodyScroll.clientHeight) >= bodyScroll.scrollHeight;
+
+        if ((up && atTop) || (down && atBottom)) {
+          e.preventDefault();
+        }
+        e.stopPropagation();
+      }, { passive: false });
+    }
+
+    // Stop wheel events on card chrome (header/footer) from scrolling background
+    card.addEventListener('wheel', (e) => {
+      const scrollEl = card.querySelector('#tour-body-scroll');
+      if (!scrollEl || !scrollEl.contains(e.target)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, { passive: false });
+
+    // Keyboard navigation: Left/Right arrows, Escape key, and scroll suppression
+    if (!this._hasBoundKeydown) {
+      this._keydownHandler = (e) => {
+        if (!this.isActive) return;
+        if (e.key === 'Escape') this.end();
+        else if (e.key === 'ArrowRight') this.next();
+        else if (e.key === 'ArrowLeft') this.prev();
+        else if (['Space', ' ', 'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+          if (!['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+            e.preventDefault();
+          }
+        }
+      };
+      document.addEventListener('keydown', this._keydownHandler);
+      this._hasBoundKeydown = true;
+    }
   },
 
   /**
@@ -954,12 +1085,16 @@ const BoutiqueTour = {
       App.switchTab(step.tabId);
     }
 
-    // 2. Update progress bar
+    // 2. Reset scroll body to top for new step
+    const bodyScroll = document.getElementById('tour-body-scroll');
+    if (bodyScroll) bodyScroll.scrollTop = 0;
+
+    // 3. Update progress bar
     const progress = ((this.currentStepIndex + 1) / this.steps.length) * 100;
     const pBar = document.getElementById('tour-progress-bar');
     if (pBar) pBar.style.width = `${progress}%`;
 
-    // 3. Header Info
+    // 4. Header Info
     const heroIcon = document.getElementById('tour-hero-icon');
     const title = document.getElementById('tour-title');
     const stepBadge = document.getElementById('tour-step-badge');
@@ -970,7 +1105,7 @@ const BoutiqueTour = {
     if (stepBadge) stepBadge.innerText = step.badge;
     if (pillarBadge) pillarBadge.innerText = step.pillar;
 
-    // 4. Concise Summary Cards (With animations)
+    // 5. Concise Summary Cards (With animations)
     const cardsContainer = document.getElementById('tour-summary-cards');
     if (cardsContainer && step.summary) {
       cardsContainer.innerHTML = step.summary.map((item, idx) => `
@@ -984,7 +1119,7 @@ const BoutiqueTour = {
       `).join('');
     }
 
-    // 5. Populate Info Details
+    // 6. Populate Info Details
     const dConcept = document.getElementById('tour-detail-concept');
     const dFlow = document.getElementById('tour-detail-flow');
     const dCode = document.getElementById('tour-detail-code');
@@ -993,7 +1128,7 @@ const BoutiqueTour = {
     if (dFlow) dFlow.innerText = step.details.flow;
     if (dCode) dCode.innerText = step.details.code;
 
-    // 6. Navigation Buttons (Arrows)
+    // 7. Navigation Buttons (Arrows)
     const prevBtn = document.getElementById('tour-btn-prev');
     const nextBtn = document.getElementById('tour-btn-next');
     if (prevBtn) prevBtn.disabled = this.currentStepIndex === 0;
@@ -1002,7 +1137,7 @@ const BoutiqueTour = {
       nextBtn.innerHTML = this.currentStepIndex === this.steps.length - 1 ? '✓' : '→';
     }
 
-    // 7. Render Navigation Dots
+    // 8. Render Navigation Dots
     const dots = document.getElementById('tour-dots');
     if (dots) {
       dots.innerHTML = this.steps.map((_, i) => `
@@ -1010,7 +1145,7 @@ const BoutiqueTour = {
       `).join('');
     }
 
-    // 8. Element Spotlight
+    // 9. Element Spotlight Halo (Preserve background scroll position; do not scroll background)
     this.removeHighlight();
     if (step.targetSelector) {
       setTimeout(() => {
@@ -1021,7 +1156,6 @@ const BoutiqueTour = {
             ? (rawEl.querySelector('.data-table-container, .glass-card, .table-container') || rawEl)
             : rawEl;
           el.classList.add('tour-highlighted-element');
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 150);
     }
@@ -1070,7 +1204,7 @@ const BoutiqueTour = {
   },
 
   /**
-   * Exits and destroys the tour popup.
+   * Exits and destroys the tour popup, restoring background scrolling.
    */
   end() {
     this.isActive = false;
@@ -1079,6 +1213,9 @@ const BoutiqueTour = {
     const card = document.getElementById('boutique-tour-card');
     if (backdrop) backdrop.remove();
     if (card) card.remove();
+
+    // Restore background scrolling
+    this._unlockBackgroundScroll();
   }
 };
 

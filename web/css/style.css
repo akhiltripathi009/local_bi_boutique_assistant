@@ -60,6 +60,13 @@
   -webkit-font-smoothing: antialiased;
 }
 
+html {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background-color: var(--bg-primary);
   background-image: 
@@ -72,6 +79,8 @@ body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -103,9 +112,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
 }
 
 .brand-section {
+  order: 1;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -252,6 +263,7 @@ body {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
@@ -1428,6 +1440,18 @@ body {
   100% { transform: scale(1.5); opacity: 0; }
 }
 
+/* Background Page Scroll Lock When Tour or Modal Overlay Is Open */
+html.tour-open,
+body.tour-open,
+body:has(.tour-backdrop),
+body:has(#boutique-tour-backdrop),
+body:has(.modal-overlay.active) {
+  overflow: hidden !important;
+  height: 100% !important;
+  overscroll-behavior: none !important;
+  touch-action: none;
+}
+
 /* 2. Full Dashboard Coverage Backdrop */
 .tour-backdrop {
   position: fixed;
@@ -1437,6 +1461,8 @@ body {
   -webkit-backdrop-filter: blur(8px);
   z-index: 99990;
   animation: tourBackdropFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overscroll-behavior: contain !important;
+  touch-action: none !important;
 }
 
 @keyframes tourBackdropFade {
@@ -1452,6 +1478,8 @@ body {
   transform: translate(-50%, -50%);
   width: 92%;
   max-width: 550px;
+  max-height: 90vh;
+  max-height: 90dvh;
   background: rgba(15, 23, 42, 0.97);
   border: 1px solid rgba(212, 175, 55, 0.45);
   box-shadow: 0 28px 72px rgba(0, 0, 0, 0.75), 0 0 36px rgba(212, 175, 55, 0.2);
@@ -1460,6 +1488,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  overscroll-behavior: contain !important;
   animation: tourPopupScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1468,11 +1497,42 @@ body {
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+/* Scrollable Middle Container (Guarantees Internal Scroll With Zero Background Bleed) */
+.tour-body-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  max-height: calc(90vh - 135px);
+  max-height: calc(90dvh - 135px);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.4) transparent;
+}
+
+.tour-body-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.tour-body-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tour-body-scroll::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.35);
+  border-radius: 4px;
+}
+
+.tour-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.6);
+}
+
 /* Top Progress Bar */
 .tour-progress-bar-container {
   width: 100%;
   height: 4px;
   background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 .tour-progress-bar {
@@ -1488,6 +1548,7 @@ body {
   display: flex;
   align-items: center;
   padding: 16px 20px 10px 60px;
+  flex-shrink: 0;
 }
 
 .tour-close-top-left {
@@ -1709,6 +1770,7 @@ body {
   padding: 12px 20px 16px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
 }
 
 .tour-nav-arrow-btn {
@@ -2873,9 +2935,18 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
 /* Header reports group default styling */
 .header-reports-group {
+  order: 2;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.header-status-group {
+  order: 3;
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .btn-header-report {
@@ -3047,7 +3118,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 }
 
 /* ==============================================================================
-   MEDIA QUERY BREAKPOINTS
+   MEDIA QUERY BREAKPOINTS - COMPREHENSIVE LUXURY RESPONSIVE SYSTEM
    ============================================================================== */
 
 /* ------------------------------------------------------------------------------
@@ -3056,6 +3127,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 @media (max-width: 1024px) {
   .app-container {
     padding: 18px;
+    max-width: 100%;
   }
   .charts-grid {
     grid-template-columns: 1fr;
@@ -3065,6 +3137,9 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   }
   .elasticity-container {
     grid-template-columns: 1fr;
+  }
+  .diag-grid-2x2 {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -3084,38 +3159,53 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   .header-reports-group .btn-header-report {
     padding: 6px 9px !important;
   }
+  .elasticity-container {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ------------------------------------------------------------------------------
    3. SMARTPHONES & PHABLETS (<= 768px) - CORE MOBILE SYSTEM
    ------------------------------------------------------------------------------ */
 @media (max-width: 768px) {
-  /* Layout & Spacing */
+  /* Layout & Global Viewport Safeguards */
   .app-container {
     padding: 12px 10px calc(76px + var(--sab)) 10px;
-    max-width: 100vw;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
   }
 
-  /* Sticky App Header */
+  /* Two-Tier Sticky App Header */
   .app-header {
-    padding: 10px 14px;
+    padding: 10px 14px 8px 14px;
     flex-wrap: wrap;
-    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px 10px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .brand-section {
-    gap: 10px;
+    order: 1;
+    gap: 8px;
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .brand-logo-icon {
     width: 32px;
     height: 32px;
     font-size: 17px;
+    flex-shrink: 0;
   }
 
   .brand-title {
-    font-size: 16px;
+    font-size: 15.5px;
     letter-spacing: 0.2px;
+    white-space: nowrap;
   }
 
   .brand-subtitle {
@@ -3123,45 +3213,30 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   }
 
   .header-status-group {
-    gap: 8px;
+    order: 2;
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
   }
 
   /* Status badge on mobile */
   .status-badge {
     padding: 4px 8px;
-    font-size: 10.5px;
+    font-size: 10px;
   }
   #header-status-text {
-    display: none; /* Show dot only on small header */
-  }
-
-  /* Header reports bar: clean mobile sub-row */
-  .header-reports-group {
-    order: 3;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    gap: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--border-subtle);
-  }
-
-  .btn-header-report {
-    flex: 1;
-    justify-content: center;
-    font-size: 11px !important;
-    padding: 7px 6px !important;
-  }
-  .header-reports-group .report-btn-text {
-    display: inline;
-    font-size: 10.5px;
+    display: none; /* Show dot only on small mobile header */
   }
 
   /* Compact Theme Toggle Button */
   .btn-theme-toggle {
-    padding: 7px 9px;
+    padding: 6px 9px;
     font-size: 13px;
+    min-height: 36px;
+    min-width: 36px;
+    justify-content: center;
   }
   .theme-toggle-label {
     display: none; /* Icon-only on mobile */
@@ -3169,8 +3244,10 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
   /* Compact Copilot Trigger */
   .btn-copilot-trigger {
-    padding: 7px 12px;
-    font-size: 12px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    min-height: 36px;
+    gap: 4px;
   }
   .copilot-btn-text-full {
     display: none;
@@ -3179,16 +3256,49 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     display: inline;
   }
 
-  /* Store Marquee Banner */
+  /* Full-width Tier-2 Executive Reports Bar */
+  .header-reports-group {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .btn-header-report {
+    flex: 1 1 0;
+    justify-content: center;
+    font-size: 11px !important;
+    padding: 7px 4px !important;
+    min-height: 36px;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .header-reports-group .report-btn-text {
+    display: inline;
+    font-size: 10.5px;
+  }
+
+  /* Store Marquee Banner: Vertical Stacking */
   .store-marquee-banner {
+    display: flex;
     flex-direction: column;
     align-items: flex-start;
     padding: 10px 12px;
     gap: 6px;
     font-size: 11px;
+    width: 100%;
+    max-width: 100%;
   }
   .marquee-items {
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 5px;
   }
   .marquee-sep {
     display: none;
@@ -3196,17 +3306,23 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   .marquee-item {
     display: block;
     width: 100%;
+    white-space: normal;
+    word-break: break-word;
   }
 
   /* Navigation Tabs Bar: Smooth Touch Swiping */
   .nav-tabs-bar {
+    display: flex;
     padding: 4px;
     gap: 6px;
     margin-bottom: 16px;
     border-radius: var(--radius-md);
+    overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    width: 100%;
+    max-width: 100%;
   }
   .nav-tabs-bar::-webkit-scrollbar {
     display: none;
@@ -3218,6 +3334,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     font-size: 12px;
     min-height: 40px;
     border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   /* Executive Timeframe Horizon Switchboard */
@@ -3226,6 +3344,10 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     border-radius: var(--radius-md);
     margin-bottom: 16px;
     gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .dash-timeframe-badge {
@@ -3238,19 +3360,21 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
   .dash-timeframe-pills {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 5px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
     width: 100%;
   }
 
   .dash-timeframe-btn {
-    padding: 7px 2px;
-    min-height: 44px;
-    flex-direction: column;
+    padding: 8px 6px;
+    min-height: 42px;
+    display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 6px;
     text-align: center;
+    width: 100%;
   }
 
   .dash-timeframe-btn .tf-icon {
@@ -3258,38 +3382,50 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   }
 
   .dash-timeframe-btn .tf-label {
-    font-size: 10.5px;
+    font-size: 11px;
+    font-weight: 600;
   }
 
   .dash-timeframe-btn .tf-tag {
-    font-size: 8.5px;
-    padding: 1px 3px;
+    font-size: 9px;
+    padding: 1px 4px;
   }
 
   /* Executive KPI Grid: Clean 2-Column Mobile Grid */
   .kpi-grid {
+    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
+    gap: 8px !important;
     margin-bottom: 16px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .kpi-card {
-    padding: 12px 10px;
+    padding: 10px 8px;
     border-radius: var(--radius-md);
+    min-width: 0;
+    overflow: hidden;
   }
 
   .kpi-label {
-    font-size: 10px;
-    margin-bottom: 4px;
+    font-size: 9.5px;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .kpi-value {
-    font-size: 18px;
+    font-size: clamp(15px, 4.2vw, 18px);
     letter-spacing: -0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .kpi-subtext {
-    font-size: 9.5px;
+    font-size: 9px;
     margin-top: 3px;
     white-space: nowrap;
     overflow: hidden;
@@ -3298,46 +3434,364 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
   /* Glass Cards & Containers */
   .glass-card {
-    padding: 14px 12px;
+    padding: 12px 10px;
     border-radius: var(--radius-md);
-    margin-bottom: 16px;
+    margin-bottom: 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .chart-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-    margin-bottom: 12px;
+    gap: 4px;
+    margin-bottom: 10px;
+    width: 100%;
   }
 
   .chart-title {
-    font-size: 13.5px;
+    font-size: 13px;
+    line-height: 1.3;
   }
 
-  /* Data Tables with Smooth Horizontal Scroll */
-  .data-table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  #chart-hourly-sales,
+  #chart-category-performance,
+  #chart-elasticity,
+  #chart-demand-curve,
+  #chart-cpi-projection {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 240px;
+  }
+
+  /* Operational Diagnostics Suite */
+  .diag-grid-2x2 {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
     width: 100%;
     max-width: 100%;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-subtle);
-    margin-bottom: 14px;
+  }
+
+  .diag-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Competitor Intelligence & Elasticity Suite */
+  .cpi-kpi-strip {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+    width: 100%;
+  }
+
+  .projection-cards-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+    width: 100%;
+  }
+
+  .elasticity-container {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100%;
+  }
+
+  .elasticity-config-box {
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 10px;
+  }
+
+  /* -----------------------------------------------------------
+     DATA TABLES: MOBILE LUXURY CARD ARCHITECTURE (ZERO HORIZONTAL SCROLL)
+     ----------------------------------------------------------- */
+  .data-table-container {
+    overflow-x: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    background: transparent !important;
+    margin-bottom: 16px;
+    position: static;
   }
 
   .luxury-table {
-    min-width: 580px; /* Guarantees columns remain readable */
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border-collapse: separate;
+    border-spacing: 0;
   }
 
-  .luxury-table th {
-    padding: 10px 12px;
-    font-size: 10px;
+  .luxury-table thead {
+    display: none !important; /* Hide rigid horizontal table header on mobile phones */
+  }
+
+  .luxury-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .luxury-table tr {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    background: rgba(19, 27, 46, 0.75);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    gap: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  [data-theme="light"] .luxury-table tr {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  }
+
+  .luxury-table tr:hover {
+    border-color: var(--gold-primary);
   }
 
   .luxury-table td {
-    padding: 10px 12px;
-    font-size: 12px;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 6px 0 !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    font-size: 12px !important;
+    box-sizing: border-box;
+    text-align: right;
   }
+
+  [data-theme="light"] .luxury-table td {
+    border-bottom-color: #f1f5f9 !important;
+  }
+
+  .luxury-table td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-top: 4px;
+  }
+
+  .luxury-table td::before {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .luxury-table td > span,
+  .luxury-table td > div {
+    max-width: 65%;
+    word-break: break-word;
+    text-align: right;
+  }
+
+  /* Colspan Empty State Rows */
+  .luxury-table td[colspan] {
+    display: block !important;
+    text-align: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    padding: 16px 8px !important;
+    color: var(--text-muted);
+  }
+
+  .luxury-table td[colspan]::before {
+    display: none !important;
+  }
+
+  /* --- TABLE 1: TOP MOVING STYLES --- */
+  #top-styles-tbody td:nth-child(1) {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #top-styles-tbody td:nth-child(1)::before { content: "Rank & Style"; color: var(--gold-primary); font-weight: 700; }
+  #top-styles-tbody td:nth-child(2)::before { content: "Net Revenue"; }
+  #top-styles-tbody td:nth-child(3)::before { content: "Gross Profit"; }
+  #top-styles-tbody td:nth-child(4)::before { content: "Units Sold"; }
+
+  /* --- TABLE 2: COMPETITOR PRICE INDEX --- */
+  #competitor-parity-tbody td:nth-child(1) {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #competitor-parity-tbody td:nth-child(1)::before { content: "Garment Style"; color: var(--gold-primary); font-weight: 700; }
+  #competitor-parity-tbody td:nth-child(2)::before { content: "Category"; }
+  #competitor-parity-tbody td:nth-child(3)::before { content: "Our Price"; }
+  #competitor-parity-tbody td:nth-child(4)::before { content: "Margin %"; }
+  #competitor-parity-tbody td:nth-child(5)::before { content: "Velvet & Vine"; }
+  #competitor-parity-tbody td:nth-child(6)::before { content: "Avenue App"; }
+  #competitor-parity-tbody td:nth-child(7)::before { content: "Minimalist"; }
+  #competitor-parity-tbody td:nth-child(8)::before { content: "Market Avg"; }
+  #competitor-parity-tbody td:nth-child(9)::before { content: "Price Index"; }
+  #competitor-parity-tbody td:nth-child(10)::before { content: "Market Position"; }
+  #competitor-parity-tbody td:nth-child(11)::before { content: "Strategy"; color: var(--gold-primary); font-weight: 700; }
+
+  /* --- TABLE 3: MASTER CIRCUIT CONTROLS SWITCHBOARD --- */
+  #circuit-controls-tbody td:nth-child(1) {
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #circuit-controls-tbody td:nth-child(1)::before { content: "Garment Style"; color: var(--gold-primary); font-weight: 700; }
+  #circuit-controls-tbody td:nth-child(2)::before { content: "Category"; }
+  #circuit-controls-tbody td:nth-child(3)::before { content: "Stock Balance"; }
+  #circuit-controls-tbody td:nth-child(4)::before { content: "Allow Sales"; }
+  #circuit-controls-tbody td:nth-child(5)::before { content: "Allow Restock"; }
+  #circuit-controls-tbody td:nth-child(6)::before { content: "Max Cap (Units)"; }
+  #circuit-controls-tbody td:nth-child(7)::before { content: "Size Breakdown"; }
+  #circuit-controls-tbody td:nth-child(7) {
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end !important;
+  }
+  #circuit-controls-tbody td:nth-child(7) .size-pill {
+    margin: 2px;
+  }
+
+  /* --- TABLE 4: DUAL-LOCATION INVENTORY CATALOG --- */
+  #inventory-table-tbody td:nth-child(2) {
+    order: -1;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #inventory-table-tbody td:nth-child(1)::before { content: "SKU Code"; }
+  #inventory-table-tbody td:nth-child(2)::before { content: "Couture Garment"; color: var(--gold-primary); font-weight: 700; }
+  #inventory-table-tbody td:nth-child(3)::before { content: "Category"; }
+  #inventory-table-tbody td:nth-child(4)::before { content: "Retail Price"; }
+  #inventory-table-tbody td:nth-child(5)::before { content: "Shop Floor Stock"; }
+  #inventory-table-tbody td:nth-child(6)::before { content: "Depot Reserve"; }
+  #inventory-table-tbody td:nth-child(7) {
+    justify-content: stretch !important;
+    padding-top: 8px !important;
+  }
+  #inventory-table-tbody td:nth-child(7)::before {
+    display: none;
+  }
+  #inventory-table-tbody td:nth-child(7) button {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  /* --- TABLE 5: VIP CLIENT CRM --- */
+  #crm-customers-tbody td:nth-child(2) {
+    order: -1;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #crm-customers-tbody td:nth-child(1)::before { content: "VIP Code"; }
+  #crm-customers-tbody td:nth-child(2)::before { content: "Patron Name"; color: var(--gold-primary); font-weight: 700; }
+  #crm-customers-tbody td:nth-child(3)::before { content: "Phone"; }
+  #crm-customers-tbody td:nth-child(4)::before { content: "Email"; }
+  #crm-customers-tbody td:nth-child(5)::before { content: "Loyalty Tier"; }
+  #crm-customers-tbody td:nth-child(6)::before { content: "Total Spend"; }
+  #crm-customers-tbody td:nth-child(7)::before { content: "Size Preference"; }
+  #crm-customers-tbody td:nth-child(8) {
+    justify-content: stretch !important;
+    padding-top: 8px !important;
+  }
+  #crm-customers-tbody td:nth-child(8)::before {
+    display: none;
+  }
+  #crm-customers-tbody td:nth-child(8) button {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  /* --- TABLE 6: SHIVI AGENT COMMUNICATIONS LOG --- */
+  #agent-comms-table-tbody td:nth-child(2) {
+    order: -1;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #agent-comms-table-tbody td:nth-child(1)::before { content: "Timestamp"; }
+  #agent-comms-table-tbody td:nth-child(2)::before { content: "Recipient"; color: var(--gold-primary); font-weight: 700; }
+  #agent-comms-table-tbody td:nth-child(3)::before { content: "Channel"; }
+  #agent-comms-table-tbody td:nth-child(4)::before { content: "Message Type"; }
+  #agent-comms-table-tbody td:nth-child(5)::before { content: "Subject / Note"; }
+  #agent-comms-table-tbody td:nth-child(6)::before { content: "Delivery Status"; }
+
+  /* --- TABLE 7: TOP MERCHANDISE REPORT SCORECARD --- */
+  #report-merch-tbody td:nth-child(2) {
+    order: -1;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #report-merch-tbody td:nth-child(1)::before { content: "Style Code"; }
+  #report-merch-tbody td:nth-child(2)::before { content: "Product Style"; color: var(--gold-primary); font-weight: 700; }
+  #report-merch-tbody td:nth-child(3)::before { content: "Units Sold"; }
+  #report-merch-tbody td:nth-child(4)::before { content: "Gross Revenue"; }
+  #report-merch-tbody td:nth-child(5)::before { content: "Gross Profit"; }
+  #report-merch-tbody td:nth-child(6)::before { content: "Realized Margin"; }
+
+  /* --- TABLE 8: INBOUND RESTOCK SHIPMENTS SCORECARD --- */
+  #report-restock-tbody td:nth-child(2) {
+    order: -1;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 2px;
+    font-size: 13.5px !important;
+    color: var(--gold-light);
+  }
+  #report-restock-tbody td:nth-child(1)::before { content: "Arrival Time"; }
+  #report-restock-tbody td:nth-child(2)::before { content: "Product Style"; color: var(--gold-primary); font-weight: 700; }
+  #report-restock-tbody td:nth-child(3)::before { content: "Restocked"; }
+  #report-restock-tbody td:nth-child(4)::before { content: "Procurement Spend"; }
 
   /* Live Ops Controls & Strip */
   .live-strip-card {
@@ -3345,7 +3799,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   }
 
   .live-strip-val {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   /* Shivi Action Cards in Chat & Console */
@@ -3404,6 +3858,11 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     font-size: 20px;
   }
 
+  .tour-card-compact {
+    width: calc(100vw - 24px) !important;
+    max-width: 480px !important;
+  }
+
   /* -----------------------------------------------------------
      TABS 2 - 8 MOBILE RESPONSIVE SYSTEM (<= 768px)
      ----------------------------------------------------------- */
@@ -3422,6 +3881,10 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   }
 
   /* TAB 2: LIVE STORE OPERATIONS */
+  .simulation-clock-badge {
+    align-self: flex-start;
+  }
+
   .live-ops-toolbar {
     padding: 12px 14px !important;
   }
@@ -3475,6 +3938,28 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     min-width: 80px;
   }
 
+  .arena-hud-bar {
+    left: 10px;
+    right: 10px;
+    top: 8px;
+    gap: 6px;
+  }
+
+  .arena-hud-bar > div:first-child span:last-child {
+    display: none; /* Hide 'Visual Operations Arena • 60 FPS' text on small mobile */
+  }
+
+  .arena-hud-pill {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  #liveArenaCanvas {
+    height: 180px !important;
+    width: 100% !important;
+    display: block;
+  }
+
   /* TAB 3: INVENTORY & CIRCUIT CONTROLS */
   .inv-summary-counters {
     display: grid;
@@ -3485,19 +3970,22 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   }
 
   .inv-counter-box {
-    padding: 6px 8px !important;
+    padding: 6px 4px !important;
     text-align: center !important;
   }
 
   .inv-counter-box div:first-child {
-    font-size: 9.5px !important;
+    font-size: 9px !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .inv-counter-box div:last-child {
-    font-size: 13.5px !important;
+    font-size: 12.5px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .circuit-filter-toolbar {
@@ -3512,6 +4000,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    display: flex;
+    gap: 6px;
     padding-bottom: 4px;
   }
 
@@ -3522,6 +4012,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   .cat-pill-btn {
     padding: 5px 12px;
     font-size: 11.5px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   /* TAB 4: VIP CLIENT CRM */
@@ -3549,30 +4041,40 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     min-height: 42px;
   }
 
+  .responsive-campaigns-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
   /* TAB 6: SHIVI DEEP AGENT */
   .agent-status-strip {
+    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
     margin-bottom: 14px !important;
+    width: 100%;
   }
 
   .agent-status-card {
-    padding: 10px 12px !important;
+    padding: 10px 10px !important;
   }
 
   .agent-status-val {
-    font-size: 14.5px !important;
+    font-size: 13.5px !important;
   }
 
   .agent-status-desc {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
     line-height: 1.3;
   }
 
   .agent-dispatchers-grid {
+    display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
     margin-bottom: 16px !important;
+    width: 100%;
   }
 
   .agent-dispatch-btn {
@@ -3630,6 +4132,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 4px;
+    display: flex;
+    width: 100%;
   }
 
   .agent-subtabs-nav::-webkit-scrollbar {
@@ -3641,6 +4145,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     font-size: 11.5px;
     min-height: 38px;
     flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .agent-news-curate-bar {
@@ -3672,7 +4177,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
 
   .email-preview-wrapper,
   .wa-mockup-wrapper {
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     overflow-x: hidden;
   }
 
@@ -3682,19 +4188,20 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 8px !important;
     margin-bottom: 16px !important;
+    width: 100%;
   }
 
   .report-scope-pill {
     min-width: 0 !important;
-    padding: 10px 12px !important;
+    padding: 9px 10px !important;
   }
 
   .report-scope-title {
-    font-size: 12px !important;
+    font-size: 11.5px !important;
   }
 
   .report-scope-desc {
-    font-size: 9.5px !important;
+    font-size: 9px !important;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -3725,11 +4232,21 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   .btn-report-dl-main {
     grid-column: span 2;
     min-height: 42px !important;
-    font-size: 12.5px !important;
+    font-size: 12px !important;
   }
 
   .report-pdf-container {
-    height: 400px !important;
+    height: 380px !important;
+    width: 100%;
+  }
+
+  #report-doc-filename {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
   }
 
   .subtabs-bar {
@@ -3738,6 +4255,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     scrollbar-width: none;
     padding-bottom: 4px;
     gap: 6px;
+    display: flex;
+    width: 100%;
   }
 
   .subtabs-bar::-webkit-scrollbar {
@@ -3755,7 +4274,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   .report-action-box {
     flex-direction: column;
     align-items: stretch;
-    padding: 16px 14px;
+    padding: 14px 12px;
     gap: 12px;
   }
 
@@ -3800,19 +4319,20 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   #sandbox-editor {
     height: 200px;
     font-size: 12px;
+    width: 100%;
   }
 }
 
 /* ------------------------------------------------------------------------------
-   4. FULL-SCREEN COPILOT DRAWER & MODALS ON MOBILE (<= 600px)
+   4. FULL-SCREEN COPILOT DRAWER & MODALS ON MOBILE (<= 640px)
    ------------------------------------------------------------------------------ */
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   /* Modals: Mobile Adaptive Dialogs */
   .modal-container {
     width: calc(100vw - 20px) !important;
     max-width: 100vw !important;
     margin: 10px !important;
-    max-height: 92vh;
+    max-height: 90vh;
     overflow-y: auto;
     padding: 16px 14px !important;
     border-radius: var(--radius-lg);
@@ -3871,6 +4391,9 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     padding: 6px 0;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
   }
   .copilot-action-chips-bar::-webkit-scrollbar {
     display: none;
@@ -3881,6 +4404,7 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     font-size: 11px;
     min-height: 34px;
     flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .chat-input-row {
@@ -3898,47 +4422,40 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     min-height: 42px;
   }
 
-  /* Timeframe Pills on 360px-420px screens: 2x2 Grid */
-  .dash-timeframe-pills {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .dash-timeframe-btn {
-    flex-direction: row;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 6px;
-  }
-
-  .dash-timeframe-btn .tf-tag {
-    display: none; /* Hide tag on tiny screens */
-  }
-
   /* Responsive Autofit Grids */
-  .responsive-grid-autofit,
-  .responsive-campaigns-grid {
+  .responsive-grid-autofit {
     grid-template-columns: 1fr;
-  }
-
-  /* Mobile Reports PDF Viewer */
-  .report-pdf-container {
-    height: 360px !important;
-  }
-
-  .inv-summary-counters {
-    grid-template-columns: repeat(3, 1fr);
   }
 }
 
+/* ------------------------------------------------------------------------------
+   5. COMPACT MOBILE (<= 440px)
+   ------------------------------------------------------------------------------ */
 @media (max-width: 440px) {
   .inv-summary-counters {
     grid-template-columns: 1fr;
     gap: 6px;
   }
+
+  .report-scope-bar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .report-viewer-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .btn-report-dl-main {
+    grid-column: span 1 !important;
+  }
+
+  #report-doc-filename {
+    max-width: 140px;
+  }
 }
 
 /* ------------------------------------------------------------------------------
-   5. ULTRA-COMPACT MOBILE (< 360px)
+   6. ULTRA-COMPACT MOBILE (< 360px)
    ------------------------------------------------------------------------------ */
 @media (max-width: 360px) {
   .kpi-grid {
@@ -3948,8 +4465,8 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
     font-size: 14px;
   }
   .btn-copilot-trigger {
-    padding: 6px 8px;
-    font-size: 11px;
+    padding: 5px 7px;
+    font-size: 10.5px;
   }
   .agent-status-strip {
     grid-template-columns: 1fr !important;
@@ -3957,10 +4474,11 @@ button, select, input, .btn, .nav-tab-btn, .copilot-chip-btn {
   .agent-dispatchers-grid {
     grid-template-columns: 1fr !important;
   }
-  .report-scope-bar {
-    grid-template-columns: 1fr !important;
+  .dash-timeframe-btn .tf-tag {
+    display: none;
   }
-  .inv-summary-counters {
-    grid-template-columns: 1fr !important;
+  .dash-timeframe-btn {
+    padding: 6px 4px;
   }
 }
+

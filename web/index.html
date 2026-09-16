@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
   <!-- Luxury Atelier Design System -->
-  <link rel="stylesheet" href="/css/style.css?v=3.2.0">
+  <link rel="stylesheet" href="/css/style.css?v=3.5.0">
 </head>
 <body>
 
@@ -37,19 +37,6 @@
         <span id="header-status-text">Connecting Store...</span>
       </div>
 
-      <!-- Quick Executive Reports Dropdown / Links -->
-      <div class="header-reports-group">
-        <a href="/api/reports/opening-pdf" target="_blank" class="btn btn-secondary btn-header-report" title="Download Morning Opening PDF Report">
-          📄 <span class="report-btn-text">Morning PDF</span>
-        </a>
-        <a href="/api/reports/closing-pdf" target="_blank" class="btn btn-secondary btn-header-report" title="Download Evening Closing PDF Report">
-          📑 <span class="report-btn-text">Evening PDF</span>
-        </a>
-        <a href="/api/reports/presentation-pptx" target="_blank" class="btn btn-secondary btn-header-report" title="Download Executive PPTX Pitch Deck">
-          📊 <span class="report-btn-text">Board PPTX</span>
-        </a>
-      </div>
-
       <!-- Theme Toggle Button -->
       <button class="btn-theme-toggle" id="btn-toggle-theme" title="Toggle Light / Dark Luxury Theme" onclick="App.toggleTheme()">
         <span id="theme-toggle-icon">☀️</span> <span id="theme-toggle-text" class="theme-toggle-label">Light Mode</span>
@@ -59,6 +46,19 @@
       <button class="btn-copilot-trigger" id="btn-open-copilot">
         <span>✨</span> <span class="copilot-btn-text-full">Shivi AI Copilot</span><span class="copilot-btn-text-short">AI Copilot</span>
       </button>
+    </div>
+
+    <!-- Quick Executive Reports Dropdown / Links -->
+    <div class="header-reports-group">
+      <a href="/api/reports/opening-pdf" target="_blank" class="btn btn-secondary btn-header-report" title="Download Morning Opening PDF Report">
+        📄 <span class="report-btn-text">Morning PDF</span>
+      </a>
+      <a href="/api/reports/closing-pdf" target="_blank" class="btn btn-secondary btn-header-report" title="Download Evening Closing PDF Report">
+        📑 <span class="report-btn-text">Evening PDF</span>
+      </a>
+      <a href="/api/reports/presentation-pptx" target="_blank" class="btn btn-secondary btn-header-report" title="Download Executive PPTX Pitch Deck">
+        📊 <span class="report-btn-text">Board PPTX</span>
+      </a>
     </div>
   </header>
 
@@ -1747,9 +1747,9 @@
   <div id="toast-container"></div>
 
   <!-- Client Application Scripts -->
-  <script src="/js/api.js?v=3.2.0"></script>
-  <script src="/js/charts.js?v=3.2.0"></script>
-  <script src="/js/tour.js?v=3.2.0"></script>
-  <script src="/js/app.js?v=3.2.0"></script>
+  <script src="/js/api.js?v=3.3.0"></script>
+  <script src="/js/charts.js?v=3.3.0"></script>
+  <script src="/js/tour.js?v=3.5.0"></script>
+  <script src="/js/app.js?v=3.3.0"></script>
 </body>
 </html>
